@@ -10,8 +10,8 @@
 ### Adding files to Makefile
 Add your files in the Makefile's "Add object files you need below" section. Remember to use the following syntax for clarity:
 ```bash
-${BUILDPATH}/$(PROJ_NAME).axf: src/file_you_want_to_add.c
-${BUILDPATH}/$(PROJ_NAME).axf: lib/src/external_library_file_you_want_to_add.c
+${BUILDPATH}/$(PROJ_NAME).axf: src/object_file_you_want_to_add.o
+${BUILDPATH}/$(PROJ_NAME).axf: lib/src/external_library_object_file_you_want_to_add.o
 ```
 
 ### To build:
