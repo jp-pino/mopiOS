@@ -3,7 +3,7 @@
 ## Structure
 1. Add your header files (\*.h) to *inc*.
 2. Add your source files (\*.c) to *src*.
-3. Add external libraries you want to use to lib.
+3. Add external libraries you want to use to *lib*.
 
 
 ## Building & Flashing

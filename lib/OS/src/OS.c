@@ -393,6 +393,7 @@ void OS_Init(void){
   PLL_Init(Bus80MHz);         // set processor clock to 80 MHz
   PortF_Init();
 	ST7735_InitR(INITR_REDTAB);
+  ST7735_OutString("OS Initialized");
 	UART_Init();
   NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
   NVIC_ST_CURRENT_R = 0;      // any write to current clears it
@@ -400,7 +401,7 @@ void OS_Init(void){
   NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|(0 << 28); // SysTick = priority 0
   NVIC_SYS_PRI2_R =(NVIC_SYS_PRI2_R&0x00FFFFFF)|(3 << 28);
 
-  //OS_AddPeriodicThread(&disk_timerproc, 10*TIME_1MS, 1);
+  OS_AddPeriodicThread(&disk_timerproc, 10*TIME_1MS, 1);
 
 	Heap_Init();
 
@@ -416,7 +417,7 @@ void OS_Init(void){
   ADC_InitIT();
   OS_AddThread(&OS_Idle,128,NUM_PRIORITIES-1);
   OS_AddThread(&Interpreter,128, NUM_PRIORITIES-2);
-	//OS_AddThread(&OS_FsInit, 256, 0);
+	OS_AddThread(&OS_FsInit, 256, 0);
   //OS_Fifo_Init(256);
 }
 

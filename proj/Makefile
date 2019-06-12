@@ -60,18 +60,18 @@ include ${ROOT}/common.mk
 # Where to find header files that do not live in the source directory.
 #
 IPATH += \
-	${ROOT}/vendor/_tm4c		          \
-	${ROOT}/vendor/ADC/inc            \
-	${ROOT}/vendor/ELF/inc            \
-	${ROOT}/vendor/FIFO/inc           \
-	${ROOT}/vendor/Heap/inc           \
-	${ROOT}/vendor/Interpreter/inc    \
-	${ROOT}/vendor/LCD/ST7735/inc     \
-	${ROOT}/vendor/OS/inc             \
-	${ROOT}/vendor/PING/inc           \
-	${ROOT}/vendor/PLL/inc            \
-	${ROOT}/vendor/SD/inc             \
-	${ROOT}/vendor/UART/inc           \
+	${ROOT}/lib/_tm4c		          \
+	${ROOT}/lib/ADC/inc            \
+	${ROOT}/lib/ELF/inc            \
+	${ROOT}/lib/FIFO/inc           \
+	${ROOT}/lib/Heap/inc           \
+	${ROOT}/lib/Interpreter/inc    \
+	${ROOT}/lib/LCD/ST7735/inc     \
+	${ROOT}/lib/OS/inc             \
+	${ROOT}/lib/PING/inc           \
+	${ROOT}/lib/PLL/inc            \
+	${ROOT}/lib/SD/inc             \
+	${ROOT}/lib/UART/inc           \
 	$/inc           									\
 
 #
@@ -89,23 +89,23 @@ ${BUILDPATH}:
 #
 # Rules for building.
 #
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/_tm4c/startup.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/_tm4c/libdriver.a
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/_tm4c/tm4c123gxl.ld
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/PLL/src/PLL.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/OS/src/osasm_gnu.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/OS/src/OS.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/LCD/ST7735/src/ST7735.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/ADC/src/ADC.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/ADC/src/ADCSWTrigger.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/ELF/src/loader.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/HEAP/src/heap.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/INTERPRETER/src/Interpreter.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/UART/src/UART.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/PING/src/Ultrasonic.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/SD/src/diskio.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/vendor/SD/src/ff.o
-SCATTERgcc_$(PROJ_NAME)=${ROOT}/vendor/_tm4c/tm4c123gxl.ld
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/_tm4c/startup.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/_tm4c/libdriver.a
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/_tm4c/tm4c123gxl.ld
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/PLL/src/PLL.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/osasm_gnu.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/OS.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/LCD/ST7735/src/ST7735.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ADC/src/ADC.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ADC/src/ADCSWTrigger.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ELF/src/loader.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/HEAP/src/heap.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/INTERPRETER/src/Interpreter.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/UART/src/UART.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/PING/src/Ultrasonic.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/SD/src/diskio.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/SD/src/ff.o
+SCATTERgcc_$(PROJ_NAME)=${ROOT}/lib/_tm4c/tm4c123gxl.ld
 ENTRY_$(PROJ_NAME)=ResetISR
 CFLAGSgcc=-DTARGET_IS_TM4C123_RB1
 
