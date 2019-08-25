@@ -19,6 +19,9 @@
 #include "ST7735.h"
 #include "UART.h"
 
+
+extern char paramBuffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
+
 // Interpreter function definitions
 void adc(void);
 void adc_o(void);
@@ -139,13 +142,12 @@ void adc(void) {
 }
 
 void adc_o(void) {
-  char buffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
-  IT_GetBuffer(buffer);
+  IT_GetBuffer(paramBuffer);
 
-  if (digits_only(buffer[0]) == 0) {
+  if (digits_only(paramBuffer[0]) == 0) {
     UART_OutError("\r\nERROR: the channel number can only contain digits 0 - 9\r\n");
   } else {
-    ADC_Init(atoi(buffer[0]));
+    ADC_Init(atoi(paramBuffer[0]));
   }
 }
 
@@ -162,19 +164,18 @@ void adc_c_task(unsigned long value) {
 }
 
 void adc_c(void) {
-  char buffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
-  IT_GetBuffer(buffer);
+  IT_GetBuffer(paramBuffer);
 
-  if (digits_only(buffer[0]) == 0) {
+  if (digits_only(paramBuffer[0]) == 0) {
     UART_OutError("\r\nERROR: the channel number can only contain digits 0 - 9\r\n");
   } else {
-    if (digits_only(buffer[1]) == 0) {
+    if (digits_only(paramBuffer[1]) == 0) {
       UART_OutError("\r\nERROR: the frequency can only contain digits 0 - 9\r\n");
     } else {
-      if (digits_only(buffer[2]) == 0) {
+      if (digits_only(paramBuffer[2]) == 0) {
         UART_OutError("\r\nERROR: the number of samples can only contain digits 0 - 9\r\n");
       } else {
-        ADC_Collect(atoi(buffer[0]), atoi(buffer[1]), &adc_c_task, atoi(buffer[2]));
+        ADC_Collect(atoi(paramBuffer[0]), atoi(paramBuffer[1]), &adc_c_task, atoi(paramBuffer[2]));
       }
     }
   }

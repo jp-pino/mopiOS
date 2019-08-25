@@ -12,9 +12,6 @@
 
 #include <stdint.h>
 
-#define NUM_THREADS        7            // maximum number of threads
-#define STACK_SIZE         512
-
 #define OS_THREAD_ADD_ERROR 0
 #define OS_THREAD_1 1
 #define OS_THREAD_2 2
@@ -59,16 +56,16 @@ typedef struct tcb_t {
   int priority;
   int deleteThis;
   int isBlocked;
-  int stack[STACK_SIZE];
+  int *stack;
   PCB *parent;
-} TCB;
+} tcb_t;
 
 /* Semaphore */
 typedef struct {
   int value;
   int max;
-  TCB *blocked;
-	TCB *who;
+  tcb_t *blocked;
+	tcb_t *who;
 } sema_t;
 
 /* Log Entry */
@@ -107,7 +104,7 @@ void OS_DisableInterrupts(void);
  * @param priority priority of the thread to be added
  * @return 1 if the thread was successfully added, 0 if not
  */
-int OS_AddThread(void(*task)(void), int stackSize, int priority);
+tcb_t* OS_AddThread(void(*task)(void), int stackSize, int priority);
 void OS_Kill(void);
 void OS_Sleep(int);
 void OS_Suspend(void);
@@ -134,7 +131,7 @@ void OS_AddSW2Task(void(*task)(void), int pri);
 
 /* Time Functions */
 
-long OS_Time(void);
+unsigned long OS_Time(void);
 unsigned long OS_TimeDifference(unsigned long, unsigned long);
 unsigned long OS_MsTime(void);
 void OS_ClearMsTime(void);

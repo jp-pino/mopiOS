@@ -44,6 +44,7 @@
   .global    OS_LogEntry
   .global    SVC_Handler
   .global    doServiceCall
+  .global    freeTCB
 
 
 // Returns highest PL with one thread in R0
@@ -81,25 +82,22 @@ PendSV_Handler:
   PUSH      {LR}
   BL        GetHighestPriority    // Highest PL with a thread => R0
   POP       {LR}
-  PUSH      {LR, R0}
+  PUSH      {R0, LR}
   MOV       R0, #2
   BL        OS_LogEntry
-  POP       {LR, R0}
+  POP       {R0, LR}
   LDR       R1, =RunPt            // Address of RunPt => R1
   LDR       R2, [R1]              // RunPt => R2
-  LDR       R3, [R2, #32]         // RunPt->deleteThis => R3
-  CMP       R3, #0
-  BEQ       cont
-  MOV       R3, #0
-  STR       R3, [R2, #20]         // RunPt->inUse = 0
-  STR       R3, [R2, #32]         // RunPt->deleteThis = 0
+  LDR       R4, [R1]
 cont:
   LDR       R3, =roundRobin       // &roundRobin => R3
   LDR       R3, [R3]              // roundRobin => R3
   CMP       R3, #1                // if roundRobin, do round robin
   BEQ       DoRoundRobin
   LDR       R3, =tcbLists         // Address of tcbLists => R3
+  PUSH      {R0}
   ADD       R3, R3, R0, LSL #2    // Add priority (x4 bc each element is 4 bytes) to address to index into tcbLists
+  POP       {R0}
   LDR       R3, [R3]              // Load address of next TCB into R3
   B         contextSwitch
 DoRoundRobin:
@@ -108,10 +106,18 @@ contextSwitch:                     // Expectations: &RunPt = R1, RunPt = R2, Nex
   STR       SP, [R2]              // Save SP into current TCB
   STR       R3, [R1]              // Store next TCB pointer to RunPt
   LDR       SP, [R3]              // Load next stack pointer into SP
-  // PUSH      {LR, R0}
-  // MOV       R0, #1
-  // BL        OS_LogEntry
-  // POP       {LR, R0}
+  PUSH      {R0, R1, R2, LR}
+  LDR       R1, [R4, #32]         // RunPt->deleteThis => R3
+  CMP       R1, #0
+  MOV       R0, R4
+  BEQ       skipDelete
+  BL        freeTCB
+skipDelete:
+  POP       {R0, R1, R2, LR}
+  PUSH      {R0, LR}
+  MOV       R0, #1
+  BL        OS_LogEntry
+  POP       {R0, LR}
   POP       {R4-R11}              // Pop registers not popped by ISR
   CPSIE     I
   BX        LR                    // Return from interrupt

@@ -21,6 +21,8 @@
 #define SDC_CS_PB0 1
 #define SDC_CS_PD7 0
 
+#define PF1                     (*((volatile uint32_t *)0x40025008))
+
 extern sema_t LCDFree;
 
 // SDC CS is PD7 or PB0 , TFT CS is PA3

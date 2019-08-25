@@ -61,7 +61,7 @@
 #define SYSCTL_RCGC2_GPIOA      0x00000001  // port A Clock Gating Control
 
 char cmd_memory[MAX_CMD_MEM][MAX_CMD_LEN]; // memory to recall commands
-
+sema_t UART_FREE;
 
 // Two-pointer implementation of the FIFO
 // can hold 0 to FIFOSIZE-1 elements
@@ -167,6 +167,8 @@ unsigned int RxFifo_Size(void){
 void UART_Init(void){
   func = 9;
 
+  OS_InitSemaphore(&UART_FREE, 1);
+
   SYSCTL_RCGCUART_R |= 0x01; // activate UART0
   SYSCTL_RCGCGPIO_R |= 0x01; // activate port A
   RxFifo_Init();                        // initialize empty FIFOs
@@ -270,11 +272,13 @@ void UART0_Handler(void){
 // Input: pointer to a NULL-terminated string to be transferred
 // Output: none
 void UART_OutString(char *pt){
+  OS_bWait(&UART_FREE);
   func = 16;
   while(*pt){
     UART_OutChar(*pt);
     pt++;
   }
+  OS_bSignal(&UART_FREE);
 }
 
 //------------UART_InUDec------------
@@ -764,6 +768,7 @@ void UART_SetColor(char color) {
 
 
 void UART_OutError(char *string) {
+  OS_bWait(&UART_FREE);
   func = 30;
   UART_OutChar(0x1B);
   UART_OutChar('[');
@@ -778,9 +783,11 @@ void UART_OutError(char *string) {
   UART_OutChar('[');
   UART_OutChar('0');
   UART_OutChar('m');
+  OS_bSignal(&UART_FREE);
 }
 
 void UART_OutStringColor(char *string, char color) {
+  OS_bWait(&UART_FREE);
   func = 31;
   UART_OutChar(0x1B);
   UART_OutChar('[');
@@ -832,4 +839,5 @@ void UART_OutStringColor(char *string, char color) {
   UART_OutChar('[');
   UART_OutChar('0');
   UART_OutChar('m');
+  OS_bSignal(&UART_FREE);
 }

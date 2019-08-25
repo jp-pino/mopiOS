@@ -39,9 +39,12 @@
 #include "UART.h"
 #include "Interpreter.h"
 #include "heap.h"
+#include "OS.h"
 
 #define HEAP_START (Heap)
 #define HEAP_END (HEAP_START + HEAP_SIZE_WORDS)
+
+sema_t HEAP_FREE;
 
 typedef struct MEMORY {
   struct MEMORY *next;
@@ -53,11 +56,13 @@ typedef struct MEMORY {
 memory_t *list;
 
 // Interpreter commands
+extern char paramBuffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
 void mem(void);
 void mem_o(void);
 void mem_a(void);
 void mem_f(void);
 void mem_w(void);
+void mem_s(void);
 
 
 
@@ -92,6 +97,8 @@ int32_t Heap_Init(void){
   *blockStart = -(int32_t)(HEAP_SIZE_WORDS - 2);
   *blockEnd = -(int32_t)(HEAP_SIZE_WORDS - 2);
 
+  OS_InitSemaphore(&HEAP_FREE, 1);
+
   list = 0;
 
   // Add interpreter commands
@@ -100,6 +107,7 @@ int32_t Heap_Init(void){
   IT_AddFlag(cmd, 'f', 1, "[name]" , &mem_f, "free memory");
   IT_AddFlag(cmd, 'w', 3, "[name] [offset] [value]" , &mem_w, "write value to memory");
   IT_AddFlag(cmd, 'o', 1, "[name]" , &mem_o, "print contents of variable");
+  IT_AddFlag(cmd, 's', 0, "" , &mem_s, "print heap stats");
 
 
 
@@ -116,7 +124,9 @@ int32_t Heap_Init(void){
 void* Heap_Malloc(int32_t desiredBytes){
   int32_t desiredWords = (desiredBytes + sizeof(int32_t) - 1) / sizeof(int32_t);
   int32_t* blockStart = HEAP_START;  // implements first fit
+  OS_bWait(&HEAP_FREE);
   if(desiredWords <= 0){
+    OS_bSignal(&HEAP_FREE);
     return 0; //NULL
   }
   while(inHeapRange(blockStart)){
@@ -124,12 +134,15 @@ void* Heap_Malloc(int32_t desiredBytes){
   // choose first block that is big enough
     if(blockUnused(blockStart) && desiredWords <= blockRoom(blockStart)){
       if(splitAndMarkBlockUsed(blockStart, desiredWords)){
+        OS_bSignal(&HEAP_FREE);
         return 0; //NULL
       }
+      OS_bSignal(&HEAP_FREE);
       return blockStart + 1;
     }
     blockStart = nextBlockHeader(blockStart);
   }
+  OS_bSignal(&HEAP_FREE);
   return 0; //NULL
 }
 
@@ -225,22 +238,28 @@ int32_t Heap_Free(void* pointer){
   int32_t* blockEnd;
   int32_t* nextBlockStart;
 
+  OS_bWait(&HEAP_FREE);
+
   blockStart = ((int32_t*)pointer) - 1;
 
   //-----Begin error checking-------
   if(!inHeapRange(blockStart)){
+    OS_bSignal(&HEAP_FREE);
     return HEAP_ERROR_POINTER_OUT_OF_RANGE;
   }
   if(blockUnused(blockStart)){
+    OS_bSignal(&HEAP_FREE);
     return HEAP_ERROR_CORRUPTED_HEAP;
   }
   blockEnd = blockTrailer(blockStart);
   if(!inHeapRange(blockEnd) || blockUnused(blockEnd)){
+    OS_bSignal(&HEAP_FREE);
     return HEAP_ERROR_CORRUPTED_HEAP;
   }
   //-----End error checking-------
 
   if(markBlockUnused(blockStart)){
+    OS_bSignal(&HEAP_FREE);
     return HEAP_ERROR_CORRUPTED_HEAP;
   }
 
@@ -260,6 +279,7 @@ int32_t Heap_Free(void* pointer){
   if(inHeapRange(nextBlockStart) && blockUnused(nextBlockStart)){
     mergeBlockWithBelow(blockStart);
   }
+  OS_bSignal(&HEAP_FREE);
   return HEAP_OK;
 }
 
@@ -507,14 +527,13 @@ void mem(void) {
 
 // Print variables stored in memory
 void mem_o(void) {
-  char buffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
   int i;
   memory_t *el = list;
 
-  IT_GetBuffer(buffer);
+  IT_GetBuffer(paramBuffer);
 
   while (el != 0) {
-    if (strcmp(el->name, buffer[0]) == 0) {
+    if (strcmp(el->name, paramBuffer[0]) == 0) {
       UART_OutString("\r\n  ");
       UART_OutString(el->name);
       for (i = 0; i < el->max; i++) {
@@ -525,31 +544,30 @@ void mem_o(void) {
     }
     el = el->next;
   }
-  UART_OutError("\r\nERROR: couldn't find the memory location\r\n");
+  UART_OutError("\r\n  ERROR: couldn't find the memory location\r\n");
 }
 
 // Allocate memory
 void mem_a(void) {
   memory_t *new;
   uint32_t i;
-  char buffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
-  IT_GetBuffer(buffer);
+  IT_GetBuffer(paramBuffer);
 
   // Allocate memory for the struct
   new = Heap_Malloc(sizeof(memory_t));
   // Save the name of the new memory location
-  strcpy(new->name, buffer[0]);
+  strcpy(new->name, paramBuffer[0]);
   // Save the max value in the allocated memory
-  if (digits_only(buffer[1]) == 0) {
-    UART_OutError("\r\nERROR: the number of memory addresses to allocate can only contain digits 0 - 9\r\n");
+  if (digits_only(paramBuffer[1]) == 0) {
+    UART_OutError("\r\n  ERROR: the number of memory addresses to allocate can only contain digits 0 - 9\r\n");
     return;
   }
-  new->max = atoi(buffer[1]);
+  new->max = atoi(paramBuffer[1]);
 
   // Allocate memory
   new->memory = Heap_Malloc(sizeof(int) * new->max);
   if (new->memory == 0) {
-    UART_OutError("\r\nERROR: couldn't allocate memory\r\n");
+    UART_OutError("\r\n  ERROR: couldn't allocate memory\r\n");
     Heap_Free(new);
     return;
   }
@@ -567,13 +585,12 @@ void mem_a(void) {
 // Free memory
 void mem_f(void) {
   memory_t *el, *prev;
-  char buffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
-  IT_GetBuffer(buffer);
+  IT_GetBuffer(paramBuffer);
 
   prev = 0;
   el = list;
   while (el != 0) {
-    if (strcmp(el->name, buffer[0]) == 0) {
+    if (strcmp(el->name, paramBuffer[0]) == 0) {
       if (el == list) { // The first
         list = list->next;
       } else if (el->next == 0) { // The last
@@ -584,48 +601,63 @@ void mem_f(void) {
 
       // Free memory
       if (Heap_Free(el->memory) != HEAP_OK) {
-        UART_OutError("\r\nERROR: couldn't free memory\r\n");
+        UART_OutError("\r\n  ERROR: couldn't free memory\r\n");
       }
 
       // Free memory struct
       if (Heap_Free(el) != HEAP_OK) {
-        UART_OutError("\r\nERROR: couldn't free memory\r\n");
+        UART_OutError("\r\n  ERROR: couldn't free memory\r\n");
       }
       return;
     }
     prev = el;
     el = el->next;
   }
-  UART_OutError("\r\nERROR: couldn't find the memory location\r\n");
+  UART_OutError("\r\n  ERROR: couldn't find the memory location\r\n");
 }
 
 // Write to memory
 void mem_w(void) {
   memory_t *el;
-  char buffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
-  IT_GetBuffer(buffer);
+  IT_GetBuffer(paramBuffer);
 
-  if (digits_only(buffer[1]) == 0) {
-    UART_OutError("\r\nERROR: the address offset can only contain digits 0 - 9\r\n");
+  if (digits_only(paramBuffer[1]) == 0) {
+    UART_OutError("\r\n  ERROR: the address offset can only contain digits 0 - 9\r\n");
     return;
   }
 
-  if (digits_only(buffer[2]) == 0) {
-    UART_OutError("\r\nERROR: the value to write can only contain digits 0 - 9\r\n");
+  if (digits_only(paramBuffer[2]) == 0) {
+    UART_OutError("\r\n  ERROR: the value to write can only contain digits 0 - 9\r\n");
     return;
   }
 
   el = list;
   while (el != 0) {
-    if (strcmp(el->name, buffer[0]) == 0) {
-      if (atoi(buffer[1]) > el->max) {
-        UART_OutError("\r\nERROR: the address offset is out of range\r\n");
+    if (strcmp(el->name, paramBuffer[0]) == 0) {
+      if (atoi(paramBuffer[1]) > el->max) {
+        UART_OutError("\r\n  ERROR: the address offset is out of range\r\n");
         return;
       }
-      el->memory[atoi(buffer[1])] = atoi(buffer[2]);
+      el->memory[atoi(paramBuffer[1])] = atoi(paramBuffer[2]);
       return;
     }
     el = el->next;
   }
-  UART_OutError("\r\nERROR: couldn't find the memory location\r\n");
+  UART_OutError("\r\n  ERROR: couldn't find the memory location\r\n");
+}
+
+// Print stats
+void mem_s(void) {
+  heap_stats_t stats;
+  stats = Heap_Stats();
+  UART_OutString("\n\r  Words Allocated: ");
+  UART_OutUDec(stats.wordsAllocated);
+  UART_OutString("\n\r  Words Available: ");
+  UART_OutUDec(stats.wordsAvailable);
+  UART_OutString("\n\r  Words Overhead: ");
+  UART_OutUDec(stats.wordsOverhead);
+  UART_OutString("\n\r  Blocks Used: ");
+  UART_OutUDec(stats.blocksUsed);
+  UART_OutString("\n\r  Blocks: ");
+  UART_OutUDec(stats.blocksUnused);
 }

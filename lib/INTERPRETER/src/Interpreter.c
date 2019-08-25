@@ -11,6 +11,7 @@
 
 cmd_t *cmdList = 0;
 char paramBuffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
+// sema_t IT_AddSemaphore;
 
 // Helper functions
 int digits_only(const char *s) {
