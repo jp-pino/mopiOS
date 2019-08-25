@@ -95,6 +95,7 @@ ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/_tm4c/tm4c123gxl.ld
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/PLL/src/PLL.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/osasm_gnu.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/OS.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/OS_Functions.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/LCD/ST7735/src/ST7735.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ADC/src/ADC.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ADC/src/ADCSWTrigger.o

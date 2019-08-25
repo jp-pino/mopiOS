@@ -16,6 +16,9 @@
 #define OS_THREAD_1 1
 #define OS_THREAD_2 2
 
+#define JITTERSIZE 32
+#define NUM_PRIORITIES 8
+
 #define TIME_1MS  80000
 #define TIME_2MS  2*TIME_1MS
 
@@ -28,6 +31,8 @@
 #define TPE1() PE1 ^= 0x02
 #define TPE2() PE2 ^= 0x04
 #define TPE3() PE3 ^= 0x08
+
+#define TCB_NAME_LEN 10
 
 
 
@@ -58,6 +63,7 @@ typedef struct tcb_t {
   int isBlocked;
   int *stack;
   PCB *parent;
+  char name[TCB_NAME_LEN + 1];
 } tcb_t;
 
 /* Semaphore */
@@ -104,11 +110,12 @@ void OS_DisableInterrupts(void);
  * @param priority priority of the thread to be added
  * @return 1 if the thread was successfully added, 0 if not
  */
-tcb_t* OS_AddThread(void(*task)(void), int stackSize, int priority);
+tcb_t* OS_AddThread(char *name, void(*task)(void), int stackSize, int priority);
 void OS_Kill(void);
 void OS_Sleep(int);
 void OS_Suspend(void);
 int OS_Id(void);
+void OS_FsInit(void);
 
 int OS_AddProcess(void(*entry)(void), void *text, void *data, int stackSize, int priority);
 

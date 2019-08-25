@@ -167,8 +167,8 @@ void PING_Init(void) {
 		period[i] = 0;
 	}
 
-	OS_AddThread(&Ultrasonic1, 128, 3);
-	OS_AddThread(&Ultrasonic2, 128, 3);
+	OS_AddThread("ultra1", &Ultrasonic1, 128, 3);
+	OS_AddThread("ultra2", &Ultrasonic2, 128, 3);
 
 	ST7735_Message(1,5,"Init:", 1);
 }

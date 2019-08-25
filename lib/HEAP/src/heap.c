@@ -102,12 +102,12 @@ int32_t Heap_Init(void){
   list = 0;
 
   // Add interpreter commands
-  cmd = IT_AddCommand("mem", 0, "", &mem, "print variables in heap");
-  IT_AddFlag(cmd, 'a', 2, "[name] [size]" , &mem_a, "allocate memory");
-  IT_AddFlag(cmd, 'f', 1, "[name]" , &mem_f, "free memory");
-  IT_AddFlag(cmd, 'w', 3, "[name] [offset] [value]" , &mem_w, "write value to memory");
-  IT_AddFlag(cmd, 'o', 1, "[name]" , &mem_o, "print contents of variable");
-  IT_AddFlag(cmd, 's', 0, "" , &mem_s, "print heap stats");
+  cmd = IT_AddCommand("mem", 0, "", &mem, "print variables in heap", 128, 3);
+  IT_AddFlag(cmd, 'a', 2, "[name] [size]" , &mem_a, "allocate memory", 128, 3);
+  IT_AddFlag(cmd, 'f', 1, "[name]" , &mem_f, "free memory", 128, 3);
+  IT_AddFlag(cmd, 'w', 3, "[name] [offset] [value]" , &mem_w, "write value to memory", 128, 3);
+  IT_AddFlag(cmd, 'o', 1, "[name]" , &mem_o, "print contents of variable", 128, 3);
+  IT_AddFlag(cmd, 's', 0, "" , &mem_s, "print heap stats", 128, 3);
 
 
 
@@ -523,6 +523,7 @@ void mem(void) {
     UART_OutString(el->name);
     el = el->next;
   }
+  IT_Kill();
 }
 
 // Print variables stored in memory
@@ -540,11 +541,12 @@ void mem_o(void) {
         UART_OutString("\r\n    ");
         UART_OutUDec(el->memory[i]);
       }
-      return;
+      IT_Kill();
     }
     el = el->next;
   }
   UART_OutError("\r\n  ERROR: couldn't find the memory location\r\n");
+  IT_Kill();
 }
 
 // Allocate memory
@@ -560,7 +562,7 @@ void mem_a(void) {
   // Save the max value in the allocated memory
   if (digits_only(paramBuffer[1]) == 0) {
     UART_OutError("\r\n  ERROR: the number of memory addresses to allocate can only contain digits 0 - 9\r\n");
-    return;
+    IT_Kill();
   }
   new->max = atoi(paramBuffer[1]);
 
@@ -569,7 +571,7 @@ void mem_a(void) {
   if (new->memory == 0) {
     UART_OutError("\r\n  ERROR: couldn't allocate memory\r\n");
     Heap_Free(new);
-    return;
+    IT_Kill();
   }
 
   // Initialize memory
@@ -580,6 +582,7 @@ void mem_a(void) {
   // Add to the memory list
   new->next = list;
   list = new;
+  IT_Kill();
 }
 
 // Free memory
@@ -608,12 +611,13 @@ void mem_f(void) {
       if (Heap_Free(el) != HEAP_OK) {
         UART_OutError("\r\n  ERROR: couldn't free memory\r\n");
       }
-      return;
+      IT_Kill();
     }
     prev = el;
     el = el->next;
   }
   UART_OutError("\r\n  ERROR: couldn't find the memory location\r\n");
+  IT_Kill();
 }
 
 // Write to memory
@@ -623,12 +627,12 @@ void mem_w(void) {
 
   if (digits_only(paramBuffer[1]) == 0) {
     UART_OutError("\r\n  ERROR: the address offset can only contain digits 0 - 9\r\n");
-    return;
+    IT_Kill();
   }
 
   if (digits_only(paramBuffer[2]) == 0) {
     UART_OutError("\r\n  ERROR: the value to write can only contain digits 0 - 9\r\n");
-    return;
+    IT_Kill();
   }
 
   el = list;
@@ -636,14 +640,15 @@ void mem_w(void) {
     if (strcmp(el->name, paramBuffer[0]) == 0) {
       if (atoi(paramBuffer[1]) > el->max) {
         UART_OutError("\r\n  ERROR: the address offset is out of range\r\n");
-        return;
+        IT_Kill();
       }
       el->memory[atoi(paramBuffer[1])] = atoi(paramBuffer[2]);
-      return;
+      IT_Kill();
     }
     el = el->next;
   }
   UART_OutError("\r\n  ERROR: couldn't find the memory location\r\n");
+  IT_Kill();
 }
 
 // Print stats
@@ -660,4 +665,5 @@ void mem_s(void) {
   UART_OutUDec(stats.blocksUsed);
   UART_OutString("\n\r  Blocks Unused: ");
   UART_OutUDec(stats.blocksUnused);
+  IT_Kill();
 }

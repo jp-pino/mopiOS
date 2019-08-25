@@ -22,14 +22,13 @@ void seconds(void) {
 
 
 void test(void) {
-  OS_AddThread(&seconds, 128, 1);
+  OS_AddThread("seconds", &seconds, 128, 1);
+  IT_Kill();
 }
 
 void setup(void) {
-  OS_Sleep(5000);
-  UART_OutString("\n\r  Adding command");
-  IT_AddCommand("test", 0, "", &test, "perform test");
-  UART_OutString("\n\r  Command added successfully!");
+  OS_Sleep(1000);
+  IT_AddCommand("test", 0, "", &test, "perform test", 128, 3);
   OS_Kill();
 }
 
@@ -41,9 +40,11 @@ int main(void){        // lab 4 real main
 
   // Add Threads
   // OS_AddThread(..., ..., ...);
-  OS_AddThread(&setup, 128, 5);
+  OS_AddThread("setup", &setup, 128, 5);
 
   // Launch the OS
   OS_Launch(TIMESLICE); // doesn't return, interrupts enabled in here
   return 0;             // this never executes
 }
+
+// Kill thread by name

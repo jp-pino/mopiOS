@@ -31,16 +31,6 @@ int ADC_Init(uint32_t channelNum);
  */
 uint16_t ADC_In(void);
 
-/** Sets up periodic ADC sampling on specified channel
- * @param channelNum Number of ADC channel to collect data on
- * @param fs Desired sample rate of ADC in Hz
- * @param buffer Pointer to buffer where ADC data will be stored
- * @param numberOfSamples Number of ADC samples to be collected into buffer
- * @return 0 for success or 1 for error
- */
-
-int ADC_Collect(uint32_t channelNum, uint32_t fs, void(*)(unsigned long), int32_t);
-
 
 uint32_t ADC2millimeter(uint32_t adcSample);
 

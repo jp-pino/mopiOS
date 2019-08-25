@@ -11,7 +11,7 @@
 
 cmd_t *cmdList = 0;
 char paramBuffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
-// sema_t IT_AddSemaphore;
+sema_t *semaphore;
 
 // Helper functions
 int digits_only(const char *s) {
@@ -36,6 +36,11 @@ void printBanner() {
 
 void printPrompt(void) {
   UART_OutStringColor("\r\nadmin$ ", GREEN);
+}
+
+void IT_Kill(void) {
+  OS_bSignal(&(*semaphore));
+  OS_Kill();
 }
 
 // Help
@@ -101,7 +106,7 @@ void IT_GetBuffer(char buffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN]) {
       buffer[i][j] = paramBuffer[i][j];
 }
 
-cmd_t* IT_AddCommand(char *cmd, unsigned char params, char *params_descr, void(*task)(void), char *descr) {
+cmd_t* IT_AddCommand(char *cmd, unsigned char params, char *params_descr, void(*task)(void), char *descr, unsigned int stack, unsigned int priority) {
   cmd_t *new;
   long sr = OS_StartCritical();
 
@@ -126,6 +131,15 @@ cmd_t* IT_AddCommand(char *cmd, unsigned char params, char *params_descr, void(*
     // Set flags to 0
     new->flags = 0;
 
+    // Set stack size
+    new->stack = stack;
+
+    // Set priority
+    new->priority = priority;
+
+    // Initialize sempahore
+    OS_InitSemaphore(&new->semaphore, 0);
+
     // Add to cmdList
     new->next = cmdList;
     cmdList = new;
@@ -136,7 +150,7 @@ cmd_t* IT_AddCommand(char *cmd, unsigned char params, char *params_descr, void(*
   return 0;
 }
 
-flag_t* IT_AddFlag(cmd_t *cmd, char flag, unsigned char params, char *params_descr, void(*task)(void), char *descr) {
+flag_t* IT_AddFlag(cmd_t *cmd, char flag, unsigned char params, char *params_descr, void(*task)(void), char *descr, unsigned int stack, unsigned int priority) {
   flag_t *new;
   long sr = OS_StartCritical();
 
@@ -157,6 +171,16 @@ flag_t* IT_AddFlag(cmd_t *cmd, char flag, unsigned char params, char *params_des
 
     // Add description
     strcpy(new->descr, descr);
+
+    // Set stack size
+    new->stack = stack;
+
+    // Set priority
+    new->priority = priority;
+
+    // Initialize sempahore
+    OS_InitSemaphore(&new->semaphore, 0);
+
 
     // Add flag
     new->next = cmd->flags;
@@ -236,8 +260,10 @@ void Interpreter(void) {
                 // If we have all the parameters, call the function
                 // The function has to read the buffer inside to get the parameters
                 if (flag->task != NULL && i == flag->params) {
-                  (*flag->task)();
-                  // OS_AddThread(flag->task, 128, 4);
+                  // (*flag->task)();
+                  semaphore = &(flag->semaphore);
+                  if(OS_AddThread("flag",flag->task, flag->stack, flag->priority))
+                    OS_bWait(&(flag->semaphore));
                   break;
                 }
               }
@@ -259,9 +285,12 @@ void Interpreter(void) {
           // The cmd didn't receive flags, check if it takes parameters
           if (cmd->params == 0) {
             // If it doesn't take any parameters, execute
-            if (cmd->task != NULL)
-              (*cmd->task)();
-              // OS_AddThread(cmd->task, 128, 4);
+            if (cmd->task != NULL){
+              // (*cmd->task)();
+              semaphore = &(cmd->semaphore);
+              if(OS_AddThread(cmd->cmd, cmd->task, cmd->stack, cmd->priority))
+                OS_bWait(&(cmd->semaphore));
+            }
           } else {
             // The command takes parameters. Load them in buffer and execute
             for (i = 0; i < cmd->params; i++) {
@@ -278,9 +307,12 @@ void Interpreter(void) {
             }
             // If we have all the parameters, call the function
             // The function has to read the buffer inside to get the parameters
-            if (cmd->task != NULL && i == cmd->params)
-              (*cmd->task)();
-              // OS_AddThread(cmd->task, 128, 4);
+            if (cmd->task != NULL && i == cmd->params) {
+              // (*cmd->task)();
+              semaphore = &(cmd->semaphore);
+              if (OS_AddThread(cmd->cmd, cmd->task, cmd->stack, cmd->priority))
+                OS_bWait(&(cmd->semaphore));
+            }
           }
         }
         // If it found the command break

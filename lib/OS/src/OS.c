@@ -24,6 +24,7 @@
 
 #include "Interpreter.h"
 #include "OS.h"
+#include "OS_Functions.h"
 #include "PLL.h"
 #include "ST7735.h"
 #include "UART.h"
@@ -35,6 +36,7 @@
 #include "tm4c123gh6pm.h"
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
 
 /* File System Globals */
 static FATFS OSfatFS;
@@ -57,14 +59,12 @@ static FATFS OSfatFS;
 
 /* Configurable definitions */
 
-#define NUM_PRIORITIES 8
 #define ROUND_ROBIN 0
 #define FIFO_SIZE 4
 
 /* Interpreter function definitions */
 void log_dump(void);
 void log_clear(void);
-void jitter(void);
 
 void insertThread(tcb_t *insert);
 void removeThread(void);
@@ -121,12 +121,9 @@ long waitFinish, bWaitFinish, signalFinish, bSignalFinish = 0;
 
 /* Filesystem Globals */
 sema_t OPEN_FREE;
-FIL file;
 int disk_set = 0;
 
 // Periodic Background Task Globals
-
-#define JITTERSIZE 64
 // Jitter
 long MaxJitter1; // largest time jitter between interrupts in usec
 unsigned long JitterHistogram1[JITTERSIZE] = {
@@ -158,22 +155,7 @@ void (*PeriodicTask2)(void);
 void measureIntEn(void);
 void measureIntDis(void);
 
-char readBuffer[512];
-extern char paramBuffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
-
 char semafunc = 0;
-
-// Symbol table
-static const ELFSymbol_t symtab[] = {
-    {"ST7735_Message", ST7735_Message},
-    {"UART_OutString", UART_OutString},
-    {"UART_InString", UART_InString},
-    {"f_open", f_open},
-    {"f_close", f_close},
-    {"f_read", f_read},
-    {"f_write", f_write},
-    {"f_lseek", f_lseek},
-};
 
 // Aperiodic Background Task Globals
 
@@ -261,136 +243,8 @@ void OS_Idle() {
 }
 
 // Interpreter Functions for FATFS
-
-// Launch an ELF process
-void open(void) {
-  ELFEnv_t env = {symtab, 8};
-  IT_GetBuffer(paramBuffer);
-  OS_bWait(&OPEN_FREE);
-  UART_OutString("\n\r");
-  // Loader funtions
-  UART_SetColor(CYAN);
-  if (exec_elf(paramBuffer[0], &env) == -1) {
-    UART_OutError("\n\rERROR: file not found");
-  }
-  UART_SetColor(RESET);
-  OS_bSignal(&OPEN_FREE);
-}
-
-// Create new file
-void touch(void) {
-  int code;
-  IT_GetBuffer(paramBuffer);
-  code = f_open(&file, paramBuffer[0], FA_CREATE_ALWAYS);
-  if (code) {
-    UART_OutError("\n\rERROR ");
-    UART_SetColor(RED);
-    UART_OutUDec(code);
-    UART_SetColor(RESET);
-    UART_OutError(": File not created");
-  }
-  f_close(&file);
-}
-
-// Remove file
-void rm(void) {
-  int code;
-  IT_GetBuffer(paramBuffer);
-  code = f_unlink(paramBuffer[0]);
-  if (code) {
-    UART_OutError("\n\rERROR ");
-    UART_SetColor(RED);
-    UART_OutUDec(code);
-    UART_SetColor(RESET);
-    UART_OutError(": File not found");
-    return;
-  }
-}
-
-// Print file
-void cat(void) {
-  int code, i;
-  char out;
-  unsigned int bytesRead = 0;
-  IT_GetBuffer(paramBuffer);
-  for (i = 0; i < 512; i++) {
-    readBuffer[i] = 0;
-  }
-
-  code = f_open(&file, paramBuffer[0], FA_READ);
-  if (code) {
-    UART_OutError("\n\rERROR ");
-    UART_SetColor(RED);
-    UART_OutUDec(code);
-    UART_SetColor(RESET);
-    UART_OutError(": File not found");
-    return;
-  }
-  UART_OutError("\n\r");
-  while (f_read(&file, &out, 1, &bytesRead) == FR_OK && bytesRead == 1) {
-    if (bytesRead != 1)
-      break;
-    UART_OutChar2(out);
-  }
-  f_close(&file);
-}
-
-// Format disk
-void df(void) {
-  int code;
-  // NO CLUE HOW TO DO THIS
-  code = f_mkfs("", 1, 512);
-  if (code) {
-    UART_OutError("\n\rERROR ");
-    UART_SetColor(RED);
-    UART_OutUDec(code);
-    UART_SetColor(RESET);
-    UART_OutError(": SD not formatted");
-    return;
-  }
-}
-
-void ls(void) {
-  DIR cwd;
-  // char cwdName[13];
-  FILINFO f;
-  int i;
-  // f_getcwd(cwdName, 12);
-  f_opendir(&cwd, "/");
-  UART_OutString("\n\rName");
-  for (i = 0; i < 15 - 4; i++) {
-    UART_OutString(" ");
-  }
-  UART_OutString("Size(bytes)\r\n\r\n");
-  f_readdir(&cwd, &f);
-  while (f.fname[0] != 0) {
-    UART_OutString(f.fname);
-    for (i = 0; i < 15 - strlen(f.fname); i++) {
-      UART_OutString(" ");
-    }
-    UART_OutUDec(f.fsize);
-    UART_OutString("\r\n");
-    f_readdir(&cwd, &f);
-  }
-  f_closedir(&cwd);
-}
-
-void systime(void) {
-  UART_OutString("\n\r  Time: ");
-  UART_OutUDec(OS_Time());
-  UART_OutString(" ms ");
-  UART_OutString("\n\r        ");
-  UART_OutUDec(OS_Time() / 1000 / 60 / 60 / 24);
-  UART_OutString("d:");
-  UART_OutUDec((OS_Time() / 1000 / 60 / 60) % 24);
-  UART_OutString("h:");
-  UART_OutUDec((OS_Time() / 1000 / 60) % 60);
-  UART_OutString("m:");
-  UART_OutUDec((OS_Time() / 1000) % 60);
-  UART_OutString("s");
-}
-
 void OS_FsInit(void) {
+  cmd_t *cmd;
   if (disk_set == 0) {
     disk_set = OS_AddPeriodicThread(&disk_timerproc, 10 * TIME_1MS, 1);
     OS_Sleep(100);
@@ -402,12 +256,14 @@ void OS_FsInit(void) {
       OS_Kill();
     }
     // Add interpreter commands
-    IT_AddCommand("touch", 1, "[name]", &touch, "create new file");
-    IT_AddCommand("rm", 1, "[name]", &rm, "delete file");
-    IT_AddCommand("cat", 1, "[name]", &cat, "print file");
-    IT_AddCommand("df", 0, "", &df, "format disk");
-    IT_AddCommand("ls", 0, "", &ls, "print disk directory");
-    IT_AddCommand("open", 1, "[name]", &open, "launch ELF file");
+    IT_AddCommand("touch", 1, "[name]", &touch, "create new file", 128, 3);
+    IT_AddCommand("rm", 1, "[name]", &rm, "delete file", 128, 3);
+    IT_AddCommand("cat", 1, "[name]", &cat, "print file", 128, 3);
+    IT_AddCommand("mkdir", 1, "[name]", &mkdir, "make directory", 128, 3);
+    IT_AddCommand("df", 0, "", &df, "format disk", 128, 3);
+    cmd = IT_AddCommand("ls", 0, "", &ls, "print disk directory", 128, 3);
+    IT_AddFlag(cmd, 'l', 0, "", &ls_l, "list in long format", 128, 3);
+    IT_AddCommand("open", 1, "[name]", &open, "launch ELF file", 128, 3);
 
     OS_Kill();
   }
@@ -415,25 +271,7 @@ void OS_FsInit(void) {
   OS_Kill();
 }
 
-void mount(void) {
-  OS_AddThread(&OS_FsInit, 128, 0);
-}
 
-void mount_force(void) {
-  if (disk_set) {
-    OS_RemovePeriodicThread(disk_set);
-    disk_set = 0;
-  }
-  OS_AddThread(&OS_FsInit, 128, 0);
-}
-
-void list_tcb(void) {
-  for (int i = 0; i < NUM_PRIORITIES; i++) {
-    if (tcbLists[i]) {
-      UART_OutString("");
-    }
-  }
-}
 /** Initialize operating system, disable interrupts until OS_Launch
  * Initialize OS controlled I/O: pendsv, 80 MHz PLL
  */
@@ -455,22 +293,26 @@ void OS_Init(void) {
 
   Heap_Init();
 
-  cmd = IT_AddCommand("mount", 0, "", &mount, "mount filesystem");
-  IT_AddFlag(cmd, 'f', 0, "", &mount_force, "force");
+  cmd = IT_AddCommand("mount", 0, "", &mount, "mount filesystem", 128, 3);
+  IT_AddFlag(cmd, 'f', 0, "", &mount_f, "force", 128, 3);
 
-  cmd = IT_AddCommand("log", 0, "", &log_dump, "dump log entries");
-  IT_AddFlag(cmd, 'c', 0, "", &log_clear, "clear log");
+  cmd = IT_AddCommand("log", 0, "", &log_dump, "dump log entries", 128, 3);
+  IT_AddFlag(cmd, 'c', 0, "", &log_clear, "clear log", 128, 3);
   log_clear();
 
-  cmd = IT_AddCommand("jitter", 0, "", &jitter, "show jitter");
-  cmd = IT_AddCommand("time", 0, "", &systime, "show time");
+  cmd = IT_AddCommand("jitter", 0, "", &jitter, "show jitter", 128, 3);
+  IT_AddFlag(cmd, 'h', 0, "", &jitter_h, "print jitter histogram", 128, 3);
+  cmd = IT_AddCommand("time", 0, "", &systime, "show time", 128, 3);
+  cmd = IT_AddCommand("threads", 0, "", &tcb, "show threads", 128, 3);
+  IT_AddFlag(cmd, 'l', 0, "", &tcb_l, "show threads in long format", 128, 3);
+  IT_AddFlag(cmd, 'c', 0, "", &tcb_c, "count threads", 128, 3);
 
   OS_InitSemaphore(&OPEN_FREE, 1);
 
   ADC_InitIT();
-  OS_AddThread(&OS_Idle, 128, NUM_PRIORITIES - 1);
-  OS_AddThread(&Interpreter, 512, NUM_PRIORITIES - 2);
-  OS_AddThread(&OS_FsInit, 512, 0);
+  OS_AddThread("idle", &OS_Idle, 128, NUM_PRIORITIES - 1);
+  OS_AddThread("bash", &Interpreter, 512, NUM_PRIORITIES - 2);
+  OS_AddThread("fsinit", &OS_FsInit, 512, 0);
   OS_Fifo_Init(256);
 }
 
@@ -500,8 +342,7 @@ void SetInitialStack(tcb_t *tcb, void (*task)(void)) {
   tcb->sp = &tcb->stack[0];
   tcb->sp[tcb->stackSize - 1] = 0x01000000; // thumb bit
   tcb->sp[tcb->stackSize - 2] = (int)task;  // Set PC to task pointer
-  tcb->sp[tcb->stackSize - 3] =
-     0x14141414; // R14 (LR) - Maybe set this to &OS_Kill
+  tcb->sp[tcb->stackSize - 3] = &OS_Kill; // R14 (LR) - Maybe set this to &OS_Kill
   tcb->sp[tcb->stackSize - 4] = 0x12121212;  // R12
   tcb->sp[tcb->stackSize - 5] = 0x03030303;  // R3
   tcb->sp[tcb->stackSize - 6] = 0x02020202;  // R2
@@ -524,7 +365,7 @@ void SetInitialStack(tcb_t *tcb, void (*task)(void)) {
  * @param priority priority of the thread to be added
  * @return 1 if the thread was successfully added, 0 if not
  */
-tcb_t* OS_AddThread(void (*task)(void), int stackSize, int priority) {
+tcb_t* OS_AddThread(char *name, void (*task)(void), int stackSize, int priority) {
   tcb_t *new;
   int tcbI, i;
   long sr = OS_StartCritical();
@@ -566,6 +407,17 @@ tcb_t* OS_AddThread(void (*task)(void), int stackSize, int priority) {
   if (new->parent != 0) {
     new->parent->numThreads++;
   }
+  // Set name
+  if (strlen(name) > TCB_NAME_LEN) {
+    UART_OutError("\n\r ERROR: Name '");
+    UART_OutError(name);
+    UART_OutError("' too long");
+    Heap_Free(new->stack);
+    Heap_Free(new);
+    OS_EndCritical(sr);
+    return 0;
+  }
+  strcpy(new->name, name);
 
   // Insert in correct list
   insertThread(new);
@@ -588,8 +440,7 @@ tcb_t* OS_AddThread(void (*task)(void), int stackSize, int priority) {
   return new;
 }
 
-int OS_AddProcess(void (*entry)(void), void *code, void *data, int stackSize,
-                  int priority) {
+int OS_AddProcess(void (*entry)(void), void *code, void *data, int stackSize, int priority) {
   PCB *newPCB;
   long sr = OS_StartCritical();
   newPCB = Heap_Malloc(sizeof(PCB));
@@ -600,7 +451,7 @@ int OS_AddProcess(void (*entry)(void), void *code, void *data, int stackSize,
     return 0;
   }
 
-  if (!OS_AddThread(entry, stackSize, priority)) {
+  if (!OS_AddThread("pchild", entry, stackSize, priority)) {
     Heap_Free(newPCB);
     Heap_Free(code);
     Heap_Free(data);
@@ -877,14 +728,14 @@ void GPIOPortF_Handler(void) {
   if ((GPIO_PORTF_RIS_R & SW1) == SW1) {
     GPIO_PORTF_ICR_R |= SW1;
     GPIO_PORTF_IM_R &= ~SW1;
-    if (OS_AddThread(&triggerSW1, 128, 0) == 0)
+    if (OS_AddThread("button1", &triggerSW1, 128, 0) == 0)
       GPIO_PORTF_IM_R |= SW1;
   }
   // Check for SW2
   else if ((GPIO_PORTF_RIS_R & SW2) == SW2) {
     GPIO_PORTF_ICR_R |= SW2;
     GPIO_PORTF_IM_R &= ~SW2;
-    if (OS_AddThread(&triggerSW2, 128, 0) == 0)
+    if (OS_AddThread("button2", &triggerSW2, 128, 0) == 0)
       GPIO_PORTF_IM_R |= SW2;
   }
 }
@@ -896,6 +747,10 @@ unsigned long OS_Time(void) {
     return (timeslice - 1 - NVIC_ST_CURRENT_R)/TIME_1MS +
       time * timeslice / TIME_1MS;
   return time;
+}
+
+unsigned long OS_TimeFull(void) {
+  return (timeslice - 1 - NVIC_ST_CURRENT_R) + time * timeslice;
 }
 
 unsigned long OS_MsTime(void) { return mstime * timeslice / TIME_1MS; }
@@ -1044,7 +899,7 @@ void *doServiceCall(int svcNum, void *arg0, void *arg1, void *arg2) {
   PF4 ^= 0x10;
   switch (svcNum) {
   case 0:
-    res = (void *)OS_AddThread((void (*)(void))(arg0), (int)arg1,
+    res = (void *)OS_AddThread("svc0", (void (*)(void))(arg0), (int)arg1,
                                (int)arg2); // SVC Call 0
     break;
   case 1:
@@ -1417,12 +1272,12 @@ void Timer4A_Handler(void) {
   if (osStarted == 0)
     return;
   if (PeriodicTask1 != 0) {
+    thisTime = OS_TimeFull();
     OS_LogEntry(LOG_PERIODIC_START);
     LOG[0].thread = OS_THREAD_1;
     (*PeriodicTask1)();
     OS_LogEntry(LOG_PERIODIC_FINISH);
     LOG[0].thread = OS_THREAD_1;
-    thisTime = OS_Time();
     if (LastTime > 0) { // ignore timing of first interrupt
       diff = OS_TimeDifference(LastTime, thisTime);
       if (diff > period1) {
@@ -1454,7 +1309,7 @@ void Timer5A_Handler(void) {
   if (osStarted == 0)
     return;
   if (PeriodicTask2 != 0) {
-    thisTime = OS_Time();
+    thisTime = OS_TimeFull();
     OS_LogEntry(LOG_PERIODIC_START);
     LOG[0].thread = OS_THREAD_2;
     (*PeriodicTask2)();
@@ -1485,13 +1340,6 @@ long OS_GetJitter(unsigned char bthread) {
   if (bthread == OS_THREAD_2)
     return MaxJitter2;
   return 0;
-}
-
-void jitter() {
-  UART_OutString("\r\n  Jitter1: ");
-  UART_OutUDec(OS_GetJitter(OS_THREAD_1));
-  UART_OutString("\r\n  Jitter2: ");
-  UART_OutUDec(OS_GetJitter(OS_THREAD_2));
 }
 
 /** Read current value of timer counter

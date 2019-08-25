@@ -34,10 +34,10 @@ int currentSamples;
 
 void ADC_InitIT(void) {
   cmd_t *cmd;
-  cmd = IT_AddCommand("adc", 0, "", &adc, "");
-  IT_AddFlag(cmd, 'o', 1, "[chan]" , &adc_o, "open a channel");
-  IT_AddFlag(cmd, 'i', 0, "" , &adc_i, "read value from open channel");
-  IT_AddFlag(cmd, 'c', 3, "[chan] [freq] [samps]" , &adc_c, "read value periodically");
+  cmd = IT_AddCommand("adc", 0, "", &adc, "", 128, 3);
+  IT_AddFlag(cmd, 'o', 1, "[chan]" , &adc_o, "open a channel", 128, 3);
+  IT_AddFlag(cmd, 'i', 0, "" , &adc_i, "read value from open channel", 128, 3);
+  IT_AddFlag(cmd, 'c', 3, "[chan] [freq] [samps]" , &adc_c, "read value periodically", 128, 3);
 }
 
 /** Opens specified ADC channel
@@ -58,87 +58,11 @@ uint16_t ADC_In(void) {
     return (uint16_t) ADC0_InSeq3();
 }
 
-/** Sets up periodic ADC sampling on specified channel
- * @param channelNum Number of ADC channel to collect data on
- * @param fs Desired sample rate of ADC in Hz
- * @param task Pointer to task into which the ADC data will be passed
- * @param numberOfSamples Number of ADC samples to be collected into buffer
- * @return 0 for success or 1 for error
- */
-int ADC_Collect(uint32_t channelNum, uint32_t fs, void(*t)(unsigned long), int32_t n) {
-	if (ADCTask != 0)
-		return 1;
-  // Store periodic task
-	ADCTask = t;
-  numberOfSamples = n;
-	currentSamples = 0;
-
-	// Activate TIMER2: SYSCTL_RCGCTIMER_R bit 5
-	SYSCTL_RCGCTIMER_R |= SYSCTL_RCGCTIMER_R2;
-
-	// 1) Ensure the timer is disabled (the TnEN bit in the GPTMCTL register
-	// is cleared) before making any changes
-	TIMER2_CTL_R &= ~TIMER_CTL_TAEN;
-
-	// 2) Write the GPTM Configuration Register (GPTMCFG) with a value of
-	// 0x0000.0000.
-	TIMER2_CFG_R = TIMER_CFG_32_BIT_TIMER;
-
-	// 3) Configure the TnMR field in the GPTM Timer n Mode Register (GPTMTnMR):
-	//   a. Write a value of 0x1 for One-Shot mode.
-	//   b. Write a value of 0x2 for Periodic mode.
-	TIMER2_TAMR_R = TIMER_TAMR_TAMR_PERIOD;
-
-	// 4) Optional
-	// Bus clock resolution (prescaler)
-	TIMER2_TAPR_R = 0x00;
-	// Clear TIMER2A timeout flag
-	TIMER2_ICR_R |= TIMER_ICR_TATOCINT;
-
-	// 5) Load the start value into the GPTM Timer n Interval Load Register
-	// (GPTMTnILR).
-	TIMER2_TAILR_R = 80000000/fs - 1;
-
-	// 6) If interrupts are required, set the appropriate bits in the GPTM
-	// Interrupt Mask Register (GPTMIMR)
-	TIMER2_IMR_R |= TIMER_IMR_TATOIM;
-
-	// Priority
-	NVIC_PRI5_R = (NVIC_PRI5_R&0x00FFFFFF)|(3<<29);
-	// interrupts enabled in the main program after all devices initialized
-	// Enable IRQ 23 in NVIC
-	NVIC_EN0_R = 1<<(23);
-
-
-	// 7) Set the TnEN bit in the GPTMCTL register to enable the timer and
-	// start counting.
-  TIMER2_CTL_R |= TIMER_CTL_TAEN;
-
-	ADC_Init(channelNum);
-	return 0;
-}
-
-// void Timer2A_Handler(void){
-// 	// 8) Poll the GPTMRIS register or wait for the interrupt to be generated
-// 	// (if enabled). In both cases, the status flags are cleared by writing a 1
-// 	// to the appropriate bit of the GPTM Interrupt Clear Register (GPTMICR)
-// 	TIMER2_ICR_R |= TIMER_ICR_TATOCINT;// acknowledge TIMER2 timeout
-//   if (ADCTask != 0) {
-// 		(*ADCTask)(ADC_In());
-// 		currentSamples++;
-// 		if (numberOfSamples >= 0 && currentSamples >= numberOfSamples) {
-// 			TIMER2_CTL_R &= ~TIMER_CTL_TAEN;
-// 			ADCTask = 0;
-// 			currentSamples = 0;
-// 		}
-// 	}
-// }
-
-
 
 // Interpreter
 void adc(void) {
   UART_OutError("\r\nERROR: COMMAND \"adc\" EXPECTS FLAGS");
+  IT_Kill();
 }
 
 void adc_o(void) {
@@ -149,18 +73,26 @@ void adc_o(void) {
   } else {
     ADC_Init(atoi(paramBuffer[0]));
   }
+  IT_Kill();
 }
 
 void adc_i(void) {
   uint16_t adc = ADC_In();
   UART_OutString("\r\n    ");
   UART_OutUDec3(adc);
+  IT_Kill();
 }
 
-void adc_c_task(unsigned long value) {
-  static int i = 0;
-	ST7735_Message(ST7735_DISPLAY_TOP, 1, "Run:", i++);
-	ST7735_Message(ST7735_DISPLAY_TOP, 2, "Val:", value);
+void adc_c_task(void) {
+  int sleep, samples, i = 0;
+  sleep = OS_MailBox_Recv();
+  samples = OS_MailBox_Recv();
+  while (i < samples) {
+    ST7735_Message(ST7735_DISPLAY_TOP, 1, "Run:", i++);
+    ST7735_Message(ST7735_DISPLAY_TOP, 2, "Val:", ADC_In());
+    OS_Sleep(sleep);
+  }
+  OS_Kill();
 }
 
 void adc_c(void) {
@@ -175,8 +107,13 @@ void adc_c(void) {
       if (digits_only(paramBuffer[2]) == 0) {
         UART_OutError("\r\nERROR: the number of samples can only contain digits 0 - 9\r\n");
       } else {
-        ADC_Collect(atoi(paramBuffer[0]), atoi(paramBuffer[1]), &adc_c_task, atoi(paramBuffer[2]));
+        ADC_Init(atoi(paramBuffer[0]));
+        OS_MailBox_Init();
+        OS_AddThread("adc_c", &adc_c_task, 128, 2);
+        OS_MailBox_Send(1000 / atoi(paramBuffer[1]));
+        OS_MailBox_Send(atoi(paramBuffer[2]));
       }
     }
   }
+  IT_Kill();
 }
