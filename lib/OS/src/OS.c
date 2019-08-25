@@ -303,9 +303,10 @@ void OS_Init(void) {
   cmd = IT_AddCommand("jitter", 0, "", &jitter, "show jitter", 128, 3);
   IT_AddFlag(cmd, 'h', 0, "", &jitter_h, "print jitter histogram", 128, 3);
   cmd = IT_AddCommand("time", 0, "", &systime, "show time", 128, 3);
-  cmd = IT_AddCommand("threads", 0, "", &tcb, "show threads", 128, 3);
+  cmd = IT_AddCommand("ts", 0, "", &tcb, "show threads", 128, 3);
   IT_AddFlag(cmd, 'l', 0, "", &tcb_l, "show threads in long format", 128, 3);
   IT_AddFlag(cmd, 'c', 0, "", &tcb_c, "count threads", 128, 3);
+  cmd = IT_AddCommand("killall", 1, "[name]", &killall, "kill running thread", 128, 1);
 
   OS_InitSemaphore(&OPEN_FREE, 1);
 
@@ -1289,7 +1290,7 @@ void Timer4A_Handler(void) {
         MaxJitter1 = jitter; // in usec
 
       } // jitter should be 0
-      if (jitter >= (unsigned long)(JITTERSIZE)) {
+      if (jitter >= JITTERSIZE) {
         jitter = JITTERSIZE - 1;
       }
       JitterHistogram1[jitter]++;
@@ -1325,7 +1326,7 @@ void Timer5A_Handler(void) {
       if (jitter > MaxJitter2) {
         MaxJitter2 = jitter; // in usec
       }                      // jitter should be 0
-      if (jitter >= (unsigned long)(JITTERSIZE)) {
+      if (jitter >= JITTERSIZE) {
         jitter = JITTERSIZE - 1;
       }
       JitterHistogram2[jitter]++;

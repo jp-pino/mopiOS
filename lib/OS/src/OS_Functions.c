@@ -351,8 +351,6 @@ void tcb_l(void) {
   IT_Kill();
 }
 
-
-
 // Count active TCBs
 void tcb_c(void) {
   UART_OutString("\n\r Active TCBs: ");
@@ -388,7 +386,11 @@ void jitter_h() {
       if (JitterHistogram1[j]*100/max1/10 >= i) {
         UART_OutString("█ ");
       } else {
-        UART_OutString("  ");
+        if (JitterHistogram1[j] > 0 && i == 1) {
+          UART_OutString("█ ");
+        } else {
+          UART_OutString("  ");
+        }
       }
     }
   }
@@ -406,7 +408,11 @@ void jitter_h() {
       if (JitterHistogram2[j]*100/max2/10 >= i) {
         UART_OutString("█ ");
       } else {
-        UART_OutString("  ");
+        if (JitterHistogram2[j] > 0 && i == 1) {
+          UART_OutString("█ ");
+        } else {
+          UART_OutString("  ");
+        }
       }
     }
   }
@@ -415,5 +421,68 @@ void jitter_h() {
     UART_OutString("══");
   }
   UART_OutString("\r\n   ");
+  IT_Kill();
+}
+
+// Kill a specific thread by name
+void killall(void) {
+  tcb_t *thread;
+  int count = 0;
+  IT_GetBuffer(paramBuffer);
+  for (int i = 0; i < NUM_PRIORITIES; i++) {
+    thread = tcbLists[i];
+    if (thread) {
+      do {
+        if (strcmp(thread->name, paramBuffer[0]) == 0) {
+          removeThread(thread);
+          Heap_Free(thread->stack);
+          Heap_Free(thread);
+          UART_OutString("\n\r  Thread removed successfully");
+          count++;
+        }
+        thread = thread->next;
+      } while (thread != tcbLists[i]);
+    }
+  }
+  thread = SleepPt;
+  if (thread) {
+    if (thread == SleepPt->prev) {
+      if (strcmp(thread->name, paramBuffer[0]) == 0) {
+        SleepPt = 0;
+        Heap_Free(thread->stack);
+        Heap_Free(thread);
+        UART_OutString("\n\r  Thread removed successfully");
+        count++;
+      }
+      if (count == 0)
+        UART_OutError("\n\r  ERROR: Thread not found");
+      IT_Kill();
+    } else {
+      while (thread != SleepPt->prev) {
+        if (strcmp(thread->name, paramBuffer[0]) == 0) {
+          thread->prev->next = thread->next;
+          thread->next->prev = thread->prev;
+          Heap_Free(thread->stack);
+          Heap_Free(thread);
+          UART_OutString("\n\r  Thread removed successfully");
+          count++;
+        }
+        thread = thread->next;
+      }
+      if (strcmp(thread->name, paramBuffer[0]) == 0) {
+        SleepPt->prev = thread->prev;
+        thread->prev->next = thread->next;
+        Heap_Free(thread->stack);
+        Heap_Free(thread);
+        UART_OutString("\n\r  Thread removed successfully");
+        count++;
+      }
+      if (count == 0)
+        UART_OutError("\n\r  ERROR: Thread not found");
+      IT_Kill();
+    }
+  }
+  if (count == 0)
+    UART_OutError("\n\r  ERROR: Thread not found");
   IT_Kill();
 }
