@@ -355,7 +355,7 @@ static Elf32_Addr addressOf(ELFExec_t *e, Elf32_Sym *sym, const char *sName) {
     if (symSec)
       return ((Elf32_Addr) symSec->data) + sym->st_value;
   }
-  DBG("  Can not find address for symbol %s\n", sName);
+  MSG("  Can not find address for symbol");
   return 0xffffffff;
 }
 
@@ -507,24 +507,26 @@ static int loadProgram(ELFExec_t *e) {
     }
 
     if (ph.p_type == PT_DYNAMIC) {
-      DBG("Examining dynamic segment %d\n", n);
+      MSG("Examining dynamic segment\n");
       founded |= placeDynamic(e, &ph, n);
       continue;
     }
 
     if (ph.p_type != PT_LOAD) continue;
 
-    DBG("Examining segment %d\n", n);
+    MSG("Examining segment \n");
 
     if (ph.p_flags & PF_W) {
       if (loadSegData(e, &e->loadData, &ph) == -1) {
         freeSegment(&e->loadText);
+        MSG("ERROR 1 \n");
         return FoundERROR;
       }
       e->loadData.segIdx = n;
       founded |= FoundLoadData;
     } else if (ph.p_flags & PF_X) {
       if (loadSegData(e, &e->loadText, &ph) == -1) {
+        MSG("ERROR 2 \n");
         freeSegment(&e->loadData);
         return FoundERROR;
       }
@@ -634,8 +636,10 @@ int exec_elf(const char *path, const ELFEnv_t *env) {
 #else
   ELFExec_t exec;
 #endif
+  long sr = OS_StartCritical();
   if (initElf(&exec, LOADER_OPEN_FOR_RD(path)) != 0) {
-    DBG("Invalid elf %s\n", path);
+    MSG("Invalid elf");
+    OS_EndCritical(sr);
     return -1;
   }
   exec.env = env;
@@ -651,9 +655,11 @@ int exec_elf(const char *path, const ELFEnv_t *env) {
       ret = jumpTo(exec.entry,
                    exec.loadText.data, exec.loadData.data);
       freeElf(&exec);
+      OS_EndCritical(sr);
       return ret;
     } else {
       MSG("Invalid PROGRAM");
+      OS_EndCritical(sr);
       return -1;
     }
   } else {
@@ -662,11 +668,14 @@ int exec_elf(const char *path, const ELFEnv_t *env) {
       if (relocateSections(&exec) == 0)
         ret = jumpTo(exec.entry, exec.text.data, 0);
       freeElf(&exec);
+      OS_EndCritical(sr);
       return ret;
     } else {
       MSG("Invalid EXEC");
+      OS_EndCritical(sr);
       return -1;
     }
   }
+  OS_EndCritical(sr);
   //return -1;
 }

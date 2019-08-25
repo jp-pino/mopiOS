@@ -658,6 +658,6 @@ void mem_s(void) {
   UART_OutUDec(stats.wordsOverhead);
   UART_OutString("\n\r  Blocks Used: ");
   UART_OutUDec(stats.blocksUsed);
-  UART_OutString("\n\r  Blocks: ");
+  UART_OutString("\n\r  Blocks Unused: ");
   UART_OutUDec(stats.blocksUnused);
 }

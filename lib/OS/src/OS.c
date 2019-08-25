@@ -247,7 +247,16 @@ void OS_EndCritical(long sr) {
 
 void OS_Idle() {
   while (1) {
-    // PF1 ^= 0x2;
+    PF1 &= 0x0;
+    PF1 &= 0x0;
+    PF1 &= 0x0;
+    PF1 &= 0x0;
+    PF1 &= 0x0;
+    PF1 &= 0x0;
+    PF1 &= 0x0;
+    PF1 &= 0x0;
+    PF1 &= 0x0;
+    PF1 |= 0x2;
   }
 }
 
@@ -459,9 +468,9 @@ void OS_Init(void) {
   OS_InitSemaphore(&OPEN_FREE, 1);
 
   ADC_InitIT();
-  OS_AddThread(&OS_Idle, 64, NUM_PRIORITIES - 1);
-  OS_AddThread(&Interpreter, 128, NUM_PRIORITIES - 2);
-  OS_AddThread(&OS_FsInit, 128, 0);
+  OS_AddThread(&OS_Idle, 128, NUM_PRIORITIES - 1);
+  OS_AddThread(&Interpreter, 512, NUM_PRIORITIES - 2);
+  OS_AddThread(&OS_FsInit, 512, 0);
   OS_Fifo_Init(256);
 }
 

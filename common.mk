@@ -323,11 +323,3 @@ flash: ${BUILDPATH}/$(PROJ_NAME).bin
 debug: ${BUILDPATH}/$(PROJ_NAME).bin
 	$(OPENOCD) --file /usr/local/Cellar/open-ocd/HEAD-8f518d3/share/openocd/scripts/board/ek-tm4c123gxl.cfg &
 	$(GDB) ${BUILDPATH}/$(PROJ_NAME).axf
-
-#
-# The rule to clean out all the build products.
-#
-clean:
-	@rm -rf ${BUILDPATH} ${wildcard *~} 2> /dev/null
-	@find . -name "*.o" -type f -delete
-	@find . -name "*.d" -type f -delete

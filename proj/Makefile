@@ -123,3 +123,11 @@ ${BUILDPATH}/$(PROJ_NAME).axf: src/main.o
 ifneq (${MAKECMDGOALS},clean)
 -include ${wildcard ${BUILDPATH}/*.d} __dummy__
 endif
+
+#
+# The rule to clean out all the build products.
+#
+clean:
+	@rm -rf ${BUILDPATH} ${wildcard *~} 2> /dev/null
+	@find ../. -name "*.o" -type f -delete
+	@find ../. -name "*.d" -type f -delete
