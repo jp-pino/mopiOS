@@ -97,7 +97,7 @@ int32_t Heap_Init(void){
   *blockStart = -(int32_t)(HEAP_SIZE_WORDS - 2);
   *blockEnd = -(int32_t)(HEAP_SIZE_WORDS - 2);
 
-  OS_InitSemaphore(&HEAP_FREE, 1);
+  OS_InitSemaphore("heap_free", &HEAP_FREE, 1);
 
   list = 0;
 
@@ -518,6 +518,9 @@ static void mergeBlockWithBelow(int32_t* upperBlockStart){
 // List all variables stored in memory
 void mem(void) {
   memory_t *el = list;
+
+  IT_Init();
+  
   while (el != 0) {
     UART_OutString("\r\n  ");
     UART_OutString(el->name);
@@ -530,6 +533,8 @@ void mem(void) {
 void mem_o(void) {
   int i;
   memory_t *el = list;
+
+  IT_Init();
 
   IT_GetBuffer(paramBuffer);
 
@@ -553,6 +558,9 @@ void mem_o(void) {
 void mem_a(void) {
   memory_t *new;
   uint32_t i;
+
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
 
   // Allocate memory for the struct
@@ -588,6 +596,9 @@ void mem_a(void) {
 // Free memory
 void mem_f(void) {
   memory_t *el, *prev;
+
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
 
   prev = 0;
@@ -623,6 +634,9 @@ void mem_f(void) {
 // Write to memory
 void mem_w(void) {
   memory_t *el;
+
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
 
   if (digits_only(paramBuffer[1]) == 0) {
@@ -654,6 +668,9 @@ void mem_w(void) {
 // Print stats
 void mem_s(void) {
   heap_stats_t stats;
+
+  IT_Init();
+
   stats = Heap_Stats();
   UART_OutString("\n\r  Words Allocated: ");
   UART_OutUDec(stats.wordsAllocated);

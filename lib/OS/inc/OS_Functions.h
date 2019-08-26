@@ -14,11 +14,13 @@ void df(void);
 void systime(void);
 void mount(void);
 void mount_f(void);
-void tcb(void);
-void tcb_l(void);
-void tcb_c(void);
+void ts(void);
+void ts_l(void);
+void ts_c(void);
 void jitter(void);
 void jitter_h(void);
 void killall(void);
+void log(void);
+void log_c(void);
 
 #endif

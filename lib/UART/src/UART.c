@@ -80,7 +80,7 @@ void TxFifo_Init(void){ // this is critical
   // should make atomic
   func = 1;
   TxPutPt = TxGetPt = &TxFifo[0]; // Empty
-  OS_InitSemaphore(&TxRoomLeft, TXFIFOSIZE-1);// Initially lots of spaces
+  OS_InitSemaphore("tx_room_l", &TxRoomLeft, TXFIFOSIZE-1);// Initially lots of spaces
   // end of critical section
 }
 
@@ -126,7 +126,7 @@ void RxFifo_Init(void){ // this is critical
 
   // should make atomic
   RxPutPt = RxGetPt = &RxFifo[0]; // Empty
-  OS_InitSemaphore(&RxFifoAvailable, 0); // Initially empty
+  OS_InitSemaphore("rf_fifo_a", &RxFifoAvailable, 0); // Initially empty
   // end of critical section
 }
 int RxFifo_Put(dataType data){
@@ -167,7 +167,7 @@ unsigned int RxFifo_Size(void){
 void UART_Init(void){
   func = 9;
 
-  OS_InitSemaphore(&UART_FREE, 1);
+  OS_InitSemaphore("uart_free", &UART_FREE, 1);
 
   SYSCTL_RCGCUART_R |= 0x01; // activate UART0
   SYSCTL_RCGCGPIO_R |= 0x01; // activate port A
@@ -334,12 +334,14 @@ void UART_OutUDecRec(unsigned long n){
 void UART_OutUDec(unsigned long n){
 // This function uses recursion to convert decimal number
 //   of unspecified length as an ASCII string
+  OS_bWait(&UART_FREE);
   func = 19;
   if(n >= 10){
     UART_OutUDecRec(n/10);
     n = n%10;
   }
   UART_OutChar(n+'0'); /* n is between 0 and 9 */
+  OS_bSignal(&UART_FREE);
 }
 
 //-----------------------UART_OutUDec3-----------------------
@@ -550,6 +552,7 @@ void UART_InCMD(char *bufPt) {
   static int mem_n = 0;
   int i, memory = -1, length = 0;
 	char character;
+  OS_bWait(&UART_FREE);
   func = 26;
   character = UART_InChar();
   while (character != CR) {
@@ -638,6 +641,7 @@ void UART_InCMD(char *bufPt) {
     if (mem_n < MAX_CMD_MEM - 1)
       mem_n++;
   }
+  OS_bSignal(&UART_FREE);
 }
 
 

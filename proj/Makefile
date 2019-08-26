@@ -78,7 +78,7 @@ IPATH += \
 # The default rule
 #
 all: ${BUILDPATH}
-all: ${BUILDPATH}/$(PROJ_NAME).axf
+all: ${BUILDPATH}/$(PROJ_NAME)
 
 #
 # The rule to create the target directory.

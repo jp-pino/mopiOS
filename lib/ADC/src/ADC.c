@@ -61,11 +61,15 @@ uint16_t ADC_In(void) {
 
 // Interpreter
 void adc(void) {
+  IT_Init();
+
   UART_OutError("\r\nERROR: COMMAND \"adc\" EXPECTS FLAGS");
   IT_Kill();
 }
 
 void adc_o(void) {
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
 
   if (digits_only(paramBuffer[0]) == 0) {
@@ -77,25 +81,37 @@ void adc_o(void) {
 }
 
 void adc_i(void) {
-  uint16_t adc = ADC_In();
+  uint16_t adc;
+
+  IT_Init();
+
+  adc = ADC_In();
+
   UART_OutString("\r\n    ");
   UART_OutUDec3(adc);
   IT_Kill();
 }
 
 void adc_c_task(void) {
-  int sleep, samples, i = 0;
+  unsigned long start;
+  int sleep, samples, i = 1;
+
+  IT_Init();
+
   sleep = OS_MailBox_Recv();
   samples = OS_MailBox_Recv();
   while (i < samples) {
+    start = OS_Time();
     ST7735_Message(ST7735_DISPLAY_TOP, 1, "Run:", i++);
     ST7735_Message(ST7735_DISPLAY_TOP, 2, "Val:", ADC_In());
-    OS_Sleep(sleep);
+    OS_Sleep(sleep - (OS_Time() - start));
   }
   OS_Kill();
 }
 
 void adc_c(void) {
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
 
   if (digits_only(paramBuffer[0]) == 0) {

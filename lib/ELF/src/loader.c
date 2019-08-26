@@ -166,7 +166,7 @@ static void dumpData(uint8_t *data, size_t size) {
 
 static int loadSecData(ELFExec_t *e, ELFSection_t *s, Elf32_Shdr *h) {
   if (!h->sh_size) {
-    MSG(" No data for section");
+    MSG("\n\rNo data for section");
     return 0;
   }
   s->data = LOADER_ALIGN_ALLOC(h->sh_size, h->sh_addralign, h->sh_flags);
@@ -355,7 +355,7 @@ static Elf32_Addr addressOf(ELFExec_t *e, Elf32_Sym *sym, const char *sName) {
     if (symSec)
       return ((Elf32_Addr) symSec->data) + sym->st_value;
   }
-  MSG("  Can not find address for symbol");
+  MSG("\n\rCan not find address for symbol");
   return 0xffffffff;
 }
 
@@ -476,12 +476,12 @@ static int placeDynamic(ELFExec_t *e, Elf32_Phdr *ph, int n) {
 static int loadSymbols(ELFExec_t *e) {
   int n;
   int founded = 0;
-  MSG("Scan ELF indexs...");
+  MSG("\n\rScan ELF indexs...");
   for (n = 1; n < e->sections; n++) {
     Elf32_Shdr sectHdr;
     char name[33] = "<unamed>";
     if (readSecHeader(e, n, &sectHdr) != 0) {
-      ERR("Error reading section");
+      ERR("\n\rError reading section");
       return -1;
     }
     if (sectHdr.sh_name)
@@ -491,7 +491,7 @@ static int loadSymbols(ELFExec_t *e) {
     if (IS_FLAGS_SET(founded, FoundAll))
       return FoundAll;
   }
-  MSG("Done");
+  MSG("\n\rDone");
   return founded;
 }
 
@@ -534,7 +534,7 @@ static int loadProgram(ELFExec_t *e) {
       founded |= FoundLoadText;
     }
   }
-  MSG("Done");
+  MSG("\n\rDone");
   return founded;
 }
 
@@ -636,13 +636,13 @@ int exec_elf(const char *path, const ELFEnv_t *env) {
 #else
   ELFExec_t exec;
 #endif
-  long sr = OS_StartCritical();
   if (initElf(&exec, LOADER_OPEN_FOR_RD(path)) != 0) {
-    MSG("Invalid elf");
-    OS_EndCritical(sr);
+    ERR("Invalid elf");
     return -1;
   }
   exec.env = env;
+
+	MSG("\n\rInit Succesful");
 
   if (exec.type == ET_EXEC) {
     int founded = 0;
@@ -655,11 +655,9 @@ int exec_elf(const char *path, const ELFEnv_t *env) {
       ret = jumpTo(exec.entry,
                    exec.loadText.data, exec.loadData.data);
       freeElf(&exec);
-      OS_EndCritical(sr);
       return ret;
     } else {
-      MSG("Invalid PROGRAM");
-      OS_EndCritical(sr);
+      ERR("Invalid PROGRAM");
       return -1;
     }
   } else {
@@ -668,14 +666,11 @@ int exec_elf(const char *path, const ELFEnv_t *env) {
       if (relocateSections(&exec) == 0)
         ret = jumpTo(exec.entry, exec.text.data, 0);
       freeElf(&exec);
-      OS_EndCritical(sr);
       return ret;
     } else {
       MSG("Invalid EXEC");
-      OS_EndCritical(sr);
       return -1;
     }
   }
-  OS_EndCritical(sr);
-  //return -1;
+  return -1;
 }

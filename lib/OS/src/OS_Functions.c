@@ -15,14 +15,21 @@ extern int disk_set;
 char readBuffer[512];
 extern tcb_t *tcbLists[NUM_PRIORITIES];
 extern tcb_t *SleepPt;
-
+extern sema_t *SemaPt;
 extern unsigned long JitterHistogram1[JITTERSIZE];
 extern unsigned long JitterHistogram2[JITTERSIZE];
+extern log_entry LOG[LOG_MAX_ENTRY];
 
 
 // Symbol table
 static const ELFSymbol_t symtab[] = {
     {"ST7735_Message", ST7735_Message},
+    {"OS_Id", OS_Id},
+    {"OS_AddThread", OS_AddThread},
+    {"OS_Time", OS_Time},
+    {"OS_Sleep", OS_Sleep},
+    {"OS_Kill", OS_Kill},
+    {"OS_TimeDifference", OS_TimeDifference},
     {"UART_OutString", UART_OutString},
     {"UART_InString", UART_InString},
     {"f_open", f_open},
@@ -35,6 +42,9 @@ static const ELFSymbol_t symtab[] = {
 // Launch an ELF process
 void open(void) {
   ELFEnv_t env = {symtab, 8};
+
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
   OS_bWait(&OPEN_FREE);
   UART_OutString("\n\r");
@@ -53,6 +63,9 @@ void ls(void) {
   DIR cwd;
   FILINFO f;
   int i;
+
+  IT_Init();
+
   UART_OutString("\n\r");
   f_opendir(&cwd, "/");
   f_readdir(&cwd, &f);
@@ -70,6 +83,9 @@ void ls_l(void) {
   DIR cwd;
   FILINFO f;
   int i = 0;
+
+  IT_Init();
+
 
   f_opendir(&cwd, "/");
   f_readdir(&cwd, &f);
@@ -167,6 +183,9 @@ void ls_l(void) {
 // Create new file
 void touch(void) {
   int code;
+
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
   code = f_open(&file, paramBuffer[0], FA_CREATE_ALWAYS);
   if (code) {
@@ -183,6 +202,9 @@ void touch(void) {
 // Remove file
 void rm(void) {
   int code;
+
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
   code = f_unlink(paramBuffer[0]);
   if (code) {
@@ -201,6 +223,9 @@ void cat(void) {
   int code, i;
   char out;
   unsigned int bytesRead = 0;
+
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
   for (i = 0; i < 512; i++) {
     readBuffer[i] = 0;
@@ -227,6 +252,8 @@ void cat(void) {
 
 // Make directory
 void mkdir(void) {
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
   if (paramBuffer[0] == 0) {
     UART_OutError("\n\r  ERROR: must specify name");
@@ -240,6 +267,9 @@ void mkdir(void) {
 // Format disk
 void df(void) {
   int code;
+
+  IT_Init();
+
   // NO CLUE HOW TO DO THIS
   code = f_mkfs("", 1, 512);
   if (code) {
@@ -255,6 +285,8 @@ void df(void) {
 
 // Print system time
 void systime(void) {
+  IT_Init();
+
   UART_OutString("\n\r  Time: ");
   UART_OutUDec(OS_Time());
   UART_OutString(" ms ");
@@ -272,12 +304,16 @@ void systime(void) {
 
 // Mount filesystem
 void mount(void) {
+  IT_Init();
+
   OS_AddThread("fsinit", &OS_FsInit, 128, 0);
   IT_Kill();
 }
 
 // Force mount filesystem
 void mount_f(void) {
+  IT_Init();
+
   if (disk_set) {
     OS_RemovePeriodicThread(disk_set);
     disk_set = 0;
@@ -286,8 +322,11 @@ void mount_f(void) {
   IT_Kill();
 }
 
-void tcb(void) {
+void ts(void) {
   tcb_t *thread;
+
+  IT_Init();
+
   UART_OutString("\n\r");
   for (int i = 0; i < NUM_PRIORITIES; i++) {
     thread = tcbLists[i];
@@ -302,9 +341,14 @@ void tcb(void) {
   IT_Kill();
 }
 
-void tcb_l(void) {
+void ts_l(void) {
   tcb_t *thread;
-  UART_OutString("\n\rid\tname\tstack\tpri\ts");
+  sema_t *semaphore;
+
+  IT_Init();
+
+  UART_OutString("\n\rid\tname\tstack\tpri\tsleep\tblock");
+
   for (int i = 0; i < NUM_PRIORITIES; i++) {
     thread = tcbLists[i];
     if (thread) {
@@ -317,10 +361,13 @@ void tcb_l(void) {
         UART_OutUDec(thread->stackSize);
         UART_OutString("\t");
         UART_OutUDec(thread->priority);
+        UART_OutString("\t");
+        UART_OutUDec(thread->sleepTime);
         thread = thread->next;
       } while (thread != tcbLists[i]);
     }
   }
+
   thread = SleepPt;
   if (thread) {
     if (thread == SleepPt->prev) {
@@ -332,7 +379,8 @@ void tcb_l(void) {
       UART_OutUDec(thread->stackSize);
       UART_OutString("\t");
       UART_OutUDec(thread->priority);
-      UART_OutString("\ts");
+      UART_OutString("\t");
+      UART_OutUDec(thread->sleepTime);
     } else {
       while (thread != SleepPt->prev) {
         UART_OutString("\n\r");
@@ -343,16 +391,57 @@ void tcb_l(void) {
         UART_OutUDec(thread->stackSize);
         UART_OutString("\t");
         UART_OutUDec(thread->priority);
-        UART_OutString("\ts");
+        UART_OutString("\t");
+        UART_OutUDec(thread->sleepTime);
         thread = thread->next;
       }
     }
+  }
+
+  semaphore = SemaPt;
+  while(semaphore != 0) {
+    thread = semaphore->blocked;
+    if (thread) {
+      if (thread == semaphore->blocked->prev) {
+        UART_OutString("\n\r");
+        UART_OutUDec(thread->id);
+        UART_OutString("\t");
+        UART_OutString(thread->name);
+        UART_OutString("\t");
+        UART_OutUDec(thread->stackSize);
+        UART_OutString("\t");
+        UART_OutUDec(thread->priority);
+        UART_OutString("\t");
+        UART_OutUDec(thread->sleepTime);
+        UART_OutString("\t");
+        UART_OutString(semaphore->name);
+      } else {
+        while(thread != semaphore->blocked->prev) {
+          UART_OutString("\n\r");
+          UART_OutUDec(thread->id);
+          UART_OutString("\t");
+          UART_OutString(thread->name);
+          UART_OutString("\t");
+          UART_OutUDec(thread->stackSize);
+          UART_OutString("\t");
+          UART_OutUDec(thread->priority);
+          UART_OutString("\t");
+          UART_OutUDec(thread->sleepTime);
+          UART_OutString("\t");
+          UART_OutString(semaphore->name);
+          thread = thread->next;
+        }
+      }
+    }
+    semaphore = semaphore->next;
   }
   IT_Kill();
 }
 
 // Count active TCBs
-void tcb_c(void) {
+void ts_c(void) {
+  IT_Init();
+
   UART_OutString("\n\r Active TCBs: ");
   UART_OutUDec(activeThreads);
   IT_Kill();
@@ -360,6 +449,8 @@ void tcb_c(void) {
 
 // Print max jitter
 void jitter() {
+  IT_Init();
+
   UART_OutString("\r\n  Jitter1: ");
   UART_OutUDec(OS_GetJitter(OS_THREAD_1));
   UART_OutString("\r\n  Jitter2: ");
@@ -371,6 +462,9 @@ void jitter() {
 void jitter_h() {
   unsigned long max1 = JitterHistogram1[0];
   unsigned long max2 = JitterHistogram2[0];
+
+  IT_Init();
+
   for (int i = 1; i < JITTERSIZE; i++) {
     if (max1 < JitterHistogram1[i])
       max1 = JitterHistogram1[i];
@@ -428,6 +522,9 @@ void jitter_h() {
 void killall(void) {
   tcb_t *thread;
   int count = 0;
+
+  IT_Init();
+
   IT_GetBuffer(paramBuffer);
   for (int i = 0; i < NUM_PRIORITIES; i++) {
     thread = tcbLists[i];
@@ -484,5 +581,49 @@ void killall(void) {
   }
   if (count == 0)
     UART_OutError("\n\r  ERROR: Thread not found");
+  IT_Kill();
+}
+
+void log(void) {
+  int i = 0;
+  IT_Init();
+  while (i < LOG_MAX_ENTRY && LOG[i].thread != -1) {
+    UART_OutString("\r\n");
+    switch (LOG[i].event) {
+    case LOG_THREAD_START:
+      UART_OutString(" FOREGROUND THREAD STARTED");
+      break;
+    case LOG_THREAD_SWITCH:
+      UART_OutString(" FOREGROUND THREAD SWITCH ");
+      break;
+    case LOG_THREAD_KILL:
+      UART_OutString(" FOREGROUND THREAD KILLED ");
+      break;
+    case LOG_PERIODIC_START:
+      UART_OutString(" PERIODIC THREAD STARTED  ");
+      break;
+    case LOG_PERIODIC_FINISH:
+      UART_OutString(" PERIODIC THREAD FINISHED ");
+      break;
+    }
+    UART_OutString(" ID: ");
+    UART_OutUDec(LOG[i].thread);
+    UART_OutString("  Time: ");
+    UART_OutUDec(LOG[i].time);
+
+    i++;
+  }
+  IT_Kill();
+}
+
+void log_c(void) {
+  int i;
+  long sr;
+  IT_Init();
+  sr = OS_StartCritical();
+  for (i = 0; i < LOG_MAX_ENTRY; i++) {
+    LOG[i].thread = -1;
+  }
+  OS_EndCritical(sr);
   IT_Kill();
 }

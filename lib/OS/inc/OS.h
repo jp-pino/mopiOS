@@ -32,7 +32,8 @@
 #define TPE2() PE2 ^= 0x04
 #define TPE3() PE3 ^= 0x08
 
-#define TCB_NAME_LEN 10
+#define TCB_NAME_LEN    10
+#define SEMA_T_NAME_LEN 10
 
 
 
@@ -67,7 +68,9 @@ typedef struct tcb_t {
 } tcb_t;
 
 /* Semaphore */
-typedef struct {
+typedef struct sema_t {
+  char name[SEMA_T_NAME_LEN + 1];
+  struct sema_t *next;
   int value;
   int max;
   tcb_t *blocked;
@@ -178,7 +181,7 @@ int OS_MailBox_Recv(void);
 
 /* Semaphore Functions */
 
-void OS_InitSemaphore(sema_t *s, int val);
+void OS_InitSemaphore(char *name, sema_t *s, int val);
 void OS_bWait(sema_t *s);
 void OS_Wait(sema_t *s);
 void OS_bSignal(sema_t *s);

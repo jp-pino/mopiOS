@@ -784,7 +784,7 @@ void static commonInit(const uint8_t *cmdList) {
   SSI0_CR1_R |= SSI_CR1_SSE;            // enable SSI
 
 
-  OS_InitSemaphore(&LCDFree,1);  // means LCD free
+  OS_InitSemaphore("lcd_free", &LCDFree,1);  // means LCD free
 
   if(cmdList) commandList(cmdList);
 }

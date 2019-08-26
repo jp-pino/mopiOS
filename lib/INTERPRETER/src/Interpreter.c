@@ -12,6 +12,8 @@
 cmd_t *cmdList = 0;
 char paramBuffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
 sema_t *semaphore;
+sema_t IT_FREE;
+sema_t IT_READY;
 
 // Helper functions
 int digits_only(const char *s) {
@@ -36,6 +38,10 @@ void printBanner() {
 
 void printPrompt(void) {
   UART_OutStringColor("\r\nadmin$ ", GREEN);
+}
+
+void IT_Init(void) {
+  OS_Sleep(100);
 }
 
 void IT_Kill(void) {
@@ -110,6 +116,15 @@ cmd_t* IT_AddCommand(char *cmd, unsigned char params, char *params_descr, void(*
   cmd_t *new;
   long sr = OS_StartCritical();
 
+  new = cmdList;
+  while (new != 0) {
+    if (strcmp(new->cmd, cmd) == 0) {
+      OS_EndCritical(sr);
+      return 0;
+    }
+    new = new->next;
+  }
+
   new = Heap_Malloc(sizeof(cmd_t));
   if (new != 0) {
     // Add command
@@ -138,7 +153,7 @@ cmd_t* IT_AddCommand(char *cmd, unsigned char params, char *params_descr, void(*
     new->priority = priority;
 
     // Initialize sempahore
-    OS_InitSemaphore(&new->semaphore, 0);
+    OS_InitSemaphore(cmd, &new->semaphore, 0);
 
     // Add to cmdList
     new->next = cmdList;
@@ -179,7 +194,7 @@ flag_t* IT_AddFlag(cmd_t *cmd, char flag, unsigned char params, char *params_des
     new->priority = priority;
 
     // Initialize sempahore
-    OS_InitSemaphore(&new->semaphore, 0);
+    OS_InitSemaphore(cmd->cmd, &new->semaphore, 0);
 
 
     // Add flag
@@ -198,6 +213,8 @@ void Interpreter(void) {
   char *word, *flag_input;
   flag_t *flag;
   cmd_t *cmd;
+
+  OS_InitSemaphore("it_free", &IT_FREE, 1);
 
   // Clear screen
   UART_OutString("\033[2J\033[H");
@@ -262,7 +279,7 @@ void Interpreter(void) {
                 if (flag->task != NULL && i == flag->params) {
                   // (*flag->task)();
                   semaphore = &(flag->semaphore);
-                  if(OS_AddThread("flag",flag->task, flag->stack, flag->priority))
+                  if(OS_AddThread(cmd->cmd, flag->task, flag->stack, flag->priority))
                     OS_bWait(&(flag->semaphore));
                   break;
                 }

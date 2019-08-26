@@ -33,6 +33,7 @@ typedef struct CMD {
 
 void Interpreter(void);
 int digits_only(const char*);
+void IT_Init(void);
 void IT_Kill(void);
 void IT_GetBuffer(char buffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN]);
 cmd_t* IT_AddCommand(char *cmd, unsigned char params, char *params_descr, void(*task)(void), char *descr, unsigned int stack, unsigned int priority);

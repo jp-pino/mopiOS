@@ -41,7 +41,7 @@ void Ultrasonic1(void) {
 	unsigned long time, sr;
   unsigned char i;
 
-	OS_InitSemaphore(&PING_FREE[0], 1);
+	OS_InitSemaphore("ping0_free", &PING_FREE[0], 1);
   while (1) {
     time = OS_Time();
     i = 0;
@@ -78,7 +78,7 @@ void Ultrasonic2 (void) {
 	unsigned long time, sr;
   unsigned char i;
 
-	OS_InitSemaphore(&PING_FREE[1], 1);
+	OS_InitSemaphore("ping1_free", &PING_FREE[1], 1);
   while (1) {
     time = OS_Time();
     i = 0;

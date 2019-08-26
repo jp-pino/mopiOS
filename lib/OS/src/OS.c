@@ -63,9 +63,6 @@ static FATFS OSfatFS;
 #define FIFO_SIZE 4
 
 /* Interpreter function definitions */
-void log_dump(void);
-void log_clear(void);
-
 void insertThread(tcb_t *insert);
 void removeThread(void);
 
@@ -99,6 +96,7 @@ TODO : Fix the below variable
 #endif
 int32_t threadActiveBitField = 0;
 tcb_t *SleepPt = NULL;
+sema_t *SemaPt = 0;
 int nextThreadId = 0;
 int activeThreads = 0;
 unsigned long time, mstime;
@@ -296,19 +294,18 @@ void OS_Init(void) {
   cmd = IT_AddCommand("mount", 0, "", &mount, "mount filesystem", 128, 3);
   IT_AddFlag(cmd, 'f', 0, "", &mount_f, "force", 128, 3);
 
-  cmd = IT_AddCommand("log", 0, "", &log_dump, "dump log entries", 128, 3);
-  IT_AddFlag(cmd, 'c', 0, "", &log_clear, "clear log", 128, 3);
-  log_clear();
+  cmd = IT_AddCommand("log", 0, "", &log, "dump log entries", 128, 3);
+  IT_AddFlag(cmd, 'c', 0, "", &log_c, "clear log", 128, 3);
 
   cmd = IT_AddCommand("jitter", 0, "", &jitter, "show jitter", 128, 3);
   IT_AddFlag(cmd, 'h', 0, "", &jitter_h, "print jitter histogram", 128, 3);
   cmd = IT_AddCommand("time", 0, "", &systime, "show time", 128, 3);
-  cmd = IT_AddCommand("ts", 0, "", &tcb, "show threads", 128, 3);
-  IT_AddFlag(cmd, 'l', 0, "", &tcb_l, "show threads in long format", 128, 3);
-  IT_AddFlag(cmd, 'c', 0, "", &tcb_c, "count threads", 128, 3);
+  cmd = IT_AddCommand("ts", 0, "", &ts, "show threads", 128, 3);
+  IT_AddFlag(cmd, 'l', 0, "", &ts_l, "show threads in long format", 512, 0);
+  IT_AddFlag(cmd, 'c', 0, "", &ts_c, "count threads", 128, 3);
   cmd = IT_AddCommand("killall", 1, "[name]", &killall, "kill running thread", 128, 1);
 
-  OS_InitSemaphore(&OPEN_FREE, 1);
+  OS_InitSemaphore("open_free", &OPEN_FREE, 1);
 
   ADC_InitIT();
   OS_AddThread("idle", &OS_Idle, 128, NUM_PRIORITIES - 1);
@@ -679,14 +676,14 @@ int OS_Id(void) { return RunPt->id; }
 
 // Add task to be executed when SW1 is pressed
 void OS_AddSW1Task(void (*task)(void), int pri) {
-  OS_InitSemaphore(&sw1ready, 1);
+  OS_InitSemaphore("sw1_ready", &sw1ready, 1);
   sw1Task = task;
   NVIC_PRI3_R = (NVIC_PRI3_R & 0xFF00FFFF) | (pri << 21);
 }
 
 // Add task to be executed when SW2 is pressed
 void OS_AddSW2Task(void (*task)(void), int pri) {
-  OS_InitSemaphore(&sw2ready, 1);
+  OS_InitSemaphore("sw2_ready", &sw2ready, 1);
   sw2Task = task;
   NVIC_PRI3_R = (NVIC_PRI3_R & 0xFF00FFFF) | (pri << 21);
 }
@@ -836,8 +833,8 @@ int OS_MailBox_Recv(void) {
 }
 
 void OS_MailBox_Init(void) {
-  OS_InitSemaphore(&mailBoxFree, 1);
-  OS_InitSemaphore(&mailDataValid, 0);
+  OS_InitSemaphore("mail_free", &mailBoxFree, 1);
+  OS_InitSemaphore("mail_valid", &mailDataValid, 0);
 }
 
 /* FIFO Globals */
@@ -852,9 +849,9 @@ int fifoGetI;
 int OS_Fifo_Init(int size) {
   fifoSize = FIFO_SIZE;
   fifoPutI = fifoGetI = 0;
-  OS_InitSemaphore(&fifoFree, 1);
-  OS_InitSemaphore(&fifoSpaceAvail, fifoSize);
-  OS_InitSemaphore(&fifoSpaceTaken, 0);
+  OS_InitSemaphore("fifo_free", &fifoFree, 1);
+  OS_InitSemaphore("fifo_avail", &fifoSpaceAvail, fifoSize);
+  OS_InitSemaphore("fifo_taken",&fifoSpaceTaken, 0);
   return fifo == 0;
 }
 
@@ -964,7 +961,16 @@ void *doServiceCall(int svcNum, void *arg0, void *arg1, void *arg2) {
 
 /* Semaphore Functions */
 
-void OS_InitSemaphore(sema_t *s, int val) {
+void OS_InitSemaphore(char *name, sema_t *s, int val) {
+  sema_t *current = SemaPt;
+  strcpy(s->name, name);
+  if (SemaPt == 0) {
+    SemaPt = s;
+    s->next = 0;
+  } else {
+    s->next = SemaPt;
+    SemaPt = s;
+  }
   s->value = val;
   s->max = val;
   s->blocked = NULL;
@@ -1425,36 +1431,6 @@ uint32_t OS_GetTime(unsigned char thread) {
   return 0;
 }
 
-void log_dump(void) {
-  int i = 0;
-  while (i < LOG_MAX_ENTRY && LOG[i].thread != -1) {
-    UART_OutString("\r\n");
-    switch (LOG[i].event) {
-    case LOG_THREAD_START:
-      UART_OutString(" FOREGROUND THREAD STARTED");
-      break;
-    case LOG_THREAD_SWITCH:
-      UART_OutString(" FOREGROUND THREAD SWITCH ");
-      break;
-    case LOG_THREAD_KILL:
-      UART_OutString(" FOREGROUND THREAD KILLED ");
-      break;
-    case LOG_PERIODIC_START:
-      UART_OutString(" PERIODIC THREAD STARTED  ");
-      break;
-    case LOG_PERIODIC_FINISH:
-      UART_OutString(" PERIODIC THREAD FINISHED ");
-      break;
-    }
-    UART_OutString(" ID: ");
-    UART_OutUDec(LOG[i].thread);
-    UART_OutString("  Time: ");
-    UART_OutUDec(LOG[i].time);
-
-    i++;
-  }
-}
-
 void OS_LogEntry(int event) {
   log_entry new;
   int i;
@@ -1466,14 +1442,5 @@ void OS_LogEntry(int event) {
   new.time = OS_Time();
   new.event = event;
   LOG[0] = new;
-  OS_EndCritical(sr);
-}
-
-void log_clear(void) {
-  int i;
-  long sr = OS_StartCritical();
-  for (i = 0; i < LOG_MAX_ENTRY; i++) {
-    LOG[i].thread = -1;
-  }
   OS_EndCritical(sr);
 }
