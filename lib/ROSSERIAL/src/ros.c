@@ -243,7 +243,7 @@ void ROS_Publish(rospacket_t *message) {
 // Receive packet from PC
 rospacket_t* message_in(void) {
   rospacket_t *message;
-  unsigned char length_h, length_l, csum_length, csum_data, topic_l, topic_h, sync_f, prot_f;
+  unsigned char csum_length, csum_data;
   unsigned short length, topic;
 
 	// Allocate memory for message
@@ -252,20 +252,23 @@ rospacket_t* message_in(void) {
     return 0;
 
 	// Sync message
-	do {
-		sync_f = UART1_InChar();
-		prot_f = UART1_InChar();
-	} while (sync_f != SYNC_F || prot_f != PROT_F);
+	while (UART1_InChar() != SYNC_F);
+	if (UART1_InChar() != PROT_F) {
+    Heap_Free(message);
+		return 0;
+	}
 
 	// Read message length
-  length_h = UART1_InChar();
-  length_l = UART1_InChar();
-  length = (length_h << 8) & length_l;
+  length = UART1_InChar();
+	length = UART1_InChar() << 8 | length;
+	message->length = length;
 
 	// Read checksum and verify
   csum_length = UART1_InChar();
-  if (csum_length != checksum_length(length))
+  if (csum_length != checksum_length(length)) {
+    Heap_Free(message);
     return 0;
+	}
 
 	// Allocate memory for message data
   message->data = Heap_Malloc(sizeof(unsigned char) * length);
@@ -274,9 +277,9 @@ rospacket_t* message_in(void) {
     return 0;
   }
 
-  topic_l = UART1_InChar();
-  topic_h = UART1_InChar();
-  topic = (topic_h << 8) & topic_l;
+	topic = UART1_InChar();
+	topic = UART1_InChar() << 8 | topic;
+	message->topic_id = topic;
 
   for (int i = 0; i < length; i++) {
     message->data[i] = UART1_InChar();
@@ -299,17 +302,6 @@ void rosnegotiate(void) {
 	rospublisher_t *publisher;
 	int i = 0;
 
-	// Get topic request
-	while (UART1_InChar() != 0xFF);
-	if (UART1_InChar() != 0xFE) OS_Kill();
-	if (UART1_InChar() != 0x00) OS_Kill();
-	if (UART1_InChar() != 0x00) OS_Kill();
-	if (UART1_InChar() != 0xFF) OS_Kill();
-	if (UART1_InChar() != 0x00) OS_Kill();
-	if (UART1_InChar() != 0x00) OS_Kill();
-	if (UART1_InChar() != 0xFF) OS_Kill();
-
-	// UART_OutStringColor("\n\rGOT TOPIC REQUEST!\n\r", CYAN);
 
 	// Register all subscribers
 	subscriber = ROSSubscribers;
@@ -403,6 +395,16 @@ void rosmain(void) {
 	rospublisher_t *publisher;
 
 	// Topic negotiation
+
+	// Get topic request
+	while (UART1_InChar() != SYNC_F);
+	if (UART1_InChar() != PROT_F) OS_Kill();
+	if (UART1_InChar() != 0x00) OS_Kill();
+	if (UART1_InChar() != 0x00) OS_Kill();
+	if (UART1_InChar() != 0xFF) OS_Kill();
+	if (UART1_InChar() != 0x00) OS_Kill();
+	if (UART1_InChar() != 0x00) OS_Kill();
+	if (UART1_InChar() != 0xFF) OS_Kill();
 	rosnegotiate();
 
 	// Launch all subscribers
@@ -423,29 +425,15 @@ void rosmain(void) {
 	while(1) {
 		message = message_in();
 		if (message == 0) continue;
-		switch(message->topic_id) {
-			case ROS_ID_PUBLISHER:
-				break;
-			case ROS_ID_SUBSCRIBER:
-				break;
-			case ROS_ID_SERVICE_SERVER:
-				break;
-			case ROS_ID_SERVICE_CLIENT:
-				break;
-			case ROS_ID_PARAMETER_REQUEST:
-				break;
-			case ROS_ID_LOG:
-				break;
-			case ROS_ID_TIME:
-				break;
-			case ROS_ID_TX_STOP:
-				break;
-			default:
-				subscriber = ROS_FindSubscriberByTopic(message->topic_id);
-				if (subscriber)
-					ROS_MailBox_Send(&(subscriber->mailbox), message);
+		if (message->topic_id == 0) {
+			rosnegotiate();
+		} else if (message->topic_id > 100) {
+			subscriber = ROS_FindSubscriberByTopic(message->topic_id);
+			if (subscriber)
+				ROS_MailBox_Send(&(subscriber->mailbox), message);
+		} else {
+			while(1);
 		}
-
 
 		// Free memory for new message
 		Heap_Free(message->data);
@@ -463,8 +451,10 @@ void ROS_Init(void) {
 }
 
 void ROS_Launch(void) {
+	IT_Init();
 	// Launch main thread
-	OS_AddThread("ros", &rosmain, 1024, 3); // Same priority as interpreter
+	OS_AddThread("ros", &rosmain, 1536, 1); // Same priority as interpreter
+	IT_Kill();
 }
 
 void ROS_SubscriberInit(rossubscriber_t *subscriber) {

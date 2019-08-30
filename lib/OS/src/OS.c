@@ -29,6 +29,7 @@
 #include "ST7735.h"
 #include "UART.h"
 #include "UART1.h"
+#include "ros.h"
 #include "adc.h"
 #include "diskio.h"
 #include "ff.h"
@@ -311,6 +312,10 @@ void OS_Init(void) {
   OS_AddThread("idle", &OS_Idle, 128, NUM_PRIORITIES - 1);
   OS_AddThread("bash", &Interpreter, 740, 3);
   OS_AddThread("fsinit", &OS_FsInit, 512, 0);
+
+	ROS_Init();
+  cmd = IT_AddCommand("ros", 0, "", &ROS_Launch, "launch ROS", 128, 4);
+
   OS_Fifo_Init(256);
 }
 

@@ -14,6 +14,10 @@
 
 #define TIMESLICE TIME_1MS  // thread switch time in system time units
 
+sema_t PRINT, PRINTED;
+
+
+#define PF2 (*((volatile uint32_t *)0x40025010))
 
 void ROSBoolPublisherExample(void) {
 	rospacket_t *message;
@@ -42,6 +46,27 @@ void ROSBoolPublisherExample(void) {
 	}
 }
 
+void ROSBoolSubscriberExample(void) {
+	rospacket_t *message;
+	rosbool_t *boolmessage;
+	ROS_SubscriberInit(ROS_FindSubscriber());
+	while(1) {
+		// Wait for message
+		message = ROS_MailBox_Recv(&(ROS_FindSubscriber()->mailbox));
+		if (message) {
+			// Deserialize data
+			boolmessage = ROS_BoolDeserialize(message);
+			if (boolmessage) {
+				// Do whatever
+				PF2 ^= 0x04;
+				// Deallocate packet and data
+				ROS_BoolFree(boolmessage);
+				ROS_PacketFree(message);
+			}
+		}
+	}
+}
+
 
 // OS and modules initialization
 int main(void){        // lab 4 real main
@@ -49,17 +74,17 @@ int main(void){        // lab 4 real main
   OS_Init();           // initialize, disable interrupts
   // Initialize other modules
 	// UART1_Init();
-	ROS_Init();
+
+	OS_InitSemaphore("print", &PRINT, 0);
+	OS_InitSemaphore("print", &PRINTED, 0);
 
   // Add Threads
   // OS_AddThread(..., ..., ...);
 
 	// Add Topics
 	ROS_AddPublisher("pos_x", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolPublisherExample, 512, 2);
+	ROS_AddSubscriber("test", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolSubscriberExample, 512, 2);
 
-
-	// Launch ROS
-	ROS_Launch();
   // Launch the OS
   OS_Launch(TIMESLICE); // doesn't return, interrupts enabled in here
   return 0;             // this never executes
