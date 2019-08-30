@@ -32,8 +32,8 @@
 #define TPE2() PE2 ^= 0x04
 #define TPE3() PE3 ^= 0x08
 
-#define TCB_NAME_LEN    10
-#define SEMA_T_NAME_LEN 10
+#define TCB_NAME_LEN    25
+#define SEMA_T_NAME_LEN 15
 
 
 

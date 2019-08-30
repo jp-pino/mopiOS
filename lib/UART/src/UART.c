@@ -72,10 +72,11 @@ sema_t UART_FREE;
 int func = 0;
 
 typedef char dataType;
-dataType volatile *TxPutPt;  // put next
-dataType volatile *TxGetPt;  // get next
-dataType TxFifo[TXFIFOSIZE];
-sema_t TxRoomLeft;   // Semaphore counting empty spaces in TxFifo
+static dataType volatile *TxPutPt;  // put next
+static dataType volatile *TxGetPt;  // get next
+static dataType TxFifo[TXFIFOSIZE];
+static sema_t TxRoomLeft;   // Semaphore counting empty spaces in TxFifo
+
 void TxFifo_Init(void){ // this is critical
   // should make atomic
   func = 1;
@@ -116,17 +117,17 @@ unsigned int TxFifo_Size(void){
 
 #define RXFIFOSIZE 16     // can be any size
 
-dataType volatile *RxPutPt;  // put next
-dataType volatile *RxGetPt;  // get next
-dataType static RxFifo[RXFIFOSIZE];
-sema_t RxFifoAvailable;   // Semaphore counting data in RxFifo
+static dataType volatile *RxPutPt;  // put next
+static dataType volatile *RxGetPt;  // get next
+static dataType RxFifo[RXFIFOSIZE];
+static sema_t RxFifoAvailable;   // Semaphore counting data in RxFifo
 
 void RxFifo_Init(void){ // this is critical
   func = 5;
 
   // should make atomic
   RxPutPt = RxGetPt = &RxFifo[0]; // Empty
-  OS_InitSemaphore("rf_fifo_a", &RxFifoAvailable, 0); // Initially empty
+  OS_InitSemaphore("rx_fifo_a", &RxFifoAvailable, 0); // Initially empty
   // end of critical section
 }
 int RxFifo_Put(dataType data){
@@ -190,9 +191,9 @@ void UART_Init(void){
                                         // configure PA1-0 as UART
   GPIO_PORTA_PCTL_R = (GPIO_PORTA_PCTL_R&0xFFFFFF00)+0x00000011;
   GPIO_PORTA_AMSEL_R = 0;               // disable analog functionality on PA
-                                        // UART0=priority 2
-  NVIC_PRI1_R = (NVIC_PRI1_R&0xFFFF00FF)|0x00004000; // bits 13-15
-  NVIC_EN0_R = NVIC_EN0_INT5;           // enable interrupt 5 in NVIC
+                                        // UART0=priority 1
+  NVIC_PRI1_R = (NVIC_PRI1_R&0xFFFF00FF)|0x00002000; // bits 13-15
+  NVIC_EN0_R |= NVIC_EN0_INT5;           // enable interrupt 5 in NVIC
 
   OS_EnableInterrupts();
 }

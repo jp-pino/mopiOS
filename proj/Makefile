@@ -60,7 +60,7 @@ include ${ROOT}/common.mk
 # Where to find header files that do not live in the source directory.
 #
 IPATH += \
-	${ROOT}/lib/_tm4c		          \
+	${ROOT}/lib/_tm4c		           \
 	${ROOT}/lib/ADC/inc            \
 	${ROOT}/lib/ELF/inc            \
 	${ROOT}/lib/FIFO/inc           \
@@ -72,13 +72,16 @@ IPATH += \
 	${ROOT}/lib/PLL/inc            \
 	${ROOT}/lib/SD/inc             \
 	${ROOT}/lib/UART/inc           \
-	$/inc           									\
+	${ROOT}/lib/UART1/inc          \
+	${ROOT}/lib/ROSSERIAL/inc      \
+	$/inc           							 \
 
 #
 # The default rule
 #
 all: ${BUILDPATH}
-all: ${BUILDPATH}/$(PROJ_NAME)
+all: ${BUILDPATH}/$(PROJ_NAME).axf
+
 
 #
 # The rule to create the target directory.
@@ -103,9 +106,13 @@ ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ELF/src/loader.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/HEAP/src/heap.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/INTERPRETER/src/Interpreter.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/UART/src/UART.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/UART1/src/UART1.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/PING/src/Ultrasonic.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/SD/src/diskio.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/SD/src/ff.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/src/ros.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/src/Bool.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/src/TopicInfo.o
 SCATTERgcc_$(PROJ_NAME)=${ROOT}/lib/_tm4c/tm4c123gxl.ld
 ENTRY_$(PROJ_NAME)=ResetISR
 CFLAGSgcc=-DTARGET_IS_TM4C123_RB1

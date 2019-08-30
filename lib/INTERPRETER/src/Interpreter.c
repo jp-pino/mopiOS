@@ -41,7 +41,7 @@ void printPrompt(void) {
 }
 
 void IT_Init(void) {
-  OS_Sleep(100);
+  // OS_Sleep(1000);
 }
 
 void IT_Kill(void) {
@@ -168,6 +168,7 @@ cmd_t* IT_AddCommand(char *cmd, unsigned char params, char *params_descr, void(*
 flag_t* IT_AddFlag(cmd_t *cmd, char flag, unsigned char params, char *params_descr, void(*task)(void), char *descr, unsigned int stack, unsigned int priority) {
   flag_t *new;
   long sr = OS_StartCritical();
+	char name[IT_MAX_CMD_LEN + 3];
 
   new = Heap_Malloc(sizeof(flag_t));
   if (new != 0) {
@@ -193,8 +194,14 @@ flag_t* IT_AddFlag(cmd_t *cmd, char flag, unsigned char params, char *params_des
     // Set priority
     new->priority = priority;
 
+		// Prepare semaphore name
+		strcpy(name, cmd->cmd);
+		name[strlen(cmd->cmd)] = '_';
+		name[strlen(cmd->cmd) + 1] = flag;
+		name[strlen(cmd->cmd) + 2] = 0;
+
     // Initialize sempahore
-    OS_InitSemaphore(cmd->cmd, &new->semaphore, 0);
+    OS_InitSemaphore(name, &new->semaphore, 0);
 
 
     // Add flag
@@ -208,11 +215,11 @@ flag_t* IT_AddFlag(cmd_t *cmd, char flag, unsigned char params, char *params_des
 }
 
 void Interpreter(void) {
-  int i;
-  char cmd_input[IT_MAX_CMD_LEN * 4 + 1];
-  char *word, *flag_input;
-  flag_t *flag;
-  cmd_t *cmd;
+  static int i;
+  static char cmd_input[IT_MAX_CMD_LEN * 4 + 1];
+  static char *word, *flag_input;
+  static flag_t *flag;
+  static cmd_t *cmd;
 
   OS_InitSemaphore("it_free", &IT_FREE, 1);
 

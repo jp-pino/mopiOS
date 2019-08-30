@@ -322,4 +322,4 @@ flash: ${BUILDPATH}/$(PROJ_NAME).bin
 #
 debug: ${BUILDPATH}/$(PROJ_NAME).bin
 	$(OPENOCD) --file /usr/local/Cellar/open-ocd/HEAD-8f518d3/share/openocd/scripts/board/ek-tm4c123gxl.cfg &
-	$(GDB) ${BUILDPATH}/$(PROJ_NAME).axf
+	$(GDB) ${BUILDPATH}/$(PROJ_NAME).axf --command=${ROOT}/init.gdb

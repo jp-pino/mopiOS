@@ -28,6 +28,8 @@
 #ifndef HEAP_H
 #define HEAP_H
 
+#include <stdint.h>
+
 // feel free to change HEAP_SIZE_BYTES to however
 // big you want the heap to be
 #define HEAP_SIZE_BYTES (1024 * 24)

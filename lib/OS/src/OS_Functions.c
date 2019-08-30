@@ -344,11 +344,13 @@ void ts(void) {
 void ts_l(void) {
   tcb_t *thread;
   sema_t *semaphore;
+	long sr;
 
   IT_Init();
 
   UART_OutString("\n\rid\tname\tstack\tpri\tsleep\tblock");
 
+	// Scheduled tasks
   for (int i = 0; i < NUM_PRIORITIES; i++) {
     thread = tcbLists[i];
     if (thread) {
@@ -368,6 +370,7 @@ void ts_l(void) {
     }
   }
 
+	// Sleeping tasks
   thread = SleepPt;
   if (thread) {
     if (thread == SleepPt->prev) {

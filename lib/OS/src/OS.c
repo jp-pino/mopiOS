@@ -28,6 +28,7 @@
 #include "PLL.h"
 #include "ST7735.h"
 #include "UART.h"
+#include "UART1.h"
 #include "adc.h"
 #include "diskio.h"
 #include "ff.h"
@@ -169,8 +170,7 @@ int periodicTask1Pri, periodicTask2Pri;
 // Port F initialization
 void PortF_Init(void) {
   SYSCTL_RCGCGPIO_R |= 0x20; // 1) activate Port F
-  while ((SYSCTL_PRGPIO_R & 0x20) == 0) {
-  }; // ready?
+  while ((SYSCTL_PRGPIO_R & 0x20) == 0); // ready?
   // 2a) unlock GPIO Port F Commit Register
   GPIO_PORTF_LOCK_R = GPIO_LOCK_KEY;
   GPIO_PORTF_CR_R |= SW1 | SW2 | 0x04 | 0x08 |
@@ -254,14 +254,14 @@ void OS_FsInit(void) {
       OS_Kill();
     }
     // Add interpreter commands
-    IT_AddCommand("touch", 1, "[name]", &touch, "create new file", 128, 3);
-    IT_AddCommand("rm", 1, "[name]", &rm, "delete file", 128, 3);
-    IT_AddCommand("cat", 1, "[name]", &cat, "print file", 128, 3);
-    IT_AddCommand("mkdir", 1, "[name]", &mkdir, "make directory", 128, 3);
-    IT_AddCommand("df", 0, "", &df, "format disk", 128, 3);
-    cmd = IT_AddCommand("ls", 0, "", &ls, "print disk directory", 128, 3);
-    IT_AddFlag(cmd, 'l', 0, "", &ls_l, "list in long format", 128, 3);
-    IT_AddCommand("open", 1, "[name]", &open, "launch ELF file", 128, 3);
+    IT_AddCommand("touch", 1, "[name]", &touch, "create new file", 128, 4);
+    IT_AddCommand("rm", 1, "[name]", &rm, "delete file", 128, 4);
+    IT_AddCommand("cat", 1, "[name]", &cat, "print file", 128, 4);
+    IT_AddCommand("mkdir", 1, "[name]", &mkdir, "make directory", 128, 4);
+    IT_AddCommand("df", 0, "", &df, "format disk", 128, 4);
+    cmd = IT_AddCommand("ls", 0, "", &ls, "print disk directory", 128, 4);
+    IT_AddFlag(cmd, 'l', 0, "", &ls_l, "list in long format", 128, 4);
+    IT_AddCommand("open", 1, "[name]", &open, "launch ELF file", 128, 4);
 
     OS_Kill();
   }
@@ -291,25 +291,25 @@ void OS_Init(void) {
 
   Heap_Init();
 
-  cmd = IT_AddCommand("mount", 0, "", &mount, "mount filesystem", 128, 3);
-  IT_AddFlag(cmd, 'f', 0, "", &mount_f, "force", 128, 3);
+  cmd = IT_AddCommand("mount", 0, "", &mount, "mount filesystem", 128, 4);
+  IT_AddFlag(cmd, 'f', 0, "", &mount_f, "force", 128, 4);
 
-  cmd = IT_AddCommand("log", 0, "", &log, "dump log entries", 128, 3);
-  IT_AddFlag(cmd, 'c', 0, "", &log_c, "clear log", 128, 3);
+  cmd = IT_AddCommand("log", 0, "", &log, "dump log entries", 128, 4);
+  IT_AddFlag(cmd, 'c', 0, "", &log_c, "clear log", 128, 4);
 
-  cmd = IT_AddCommand("jitter", 0, "", &jitter, "show jitter", 128, 3);
-  IT_AddFlag(cmd, 'h', 0, "", &jitter_h, "print jitter histogram", 128, 3);
-  cmd = IT_AddCommand("time", 0, "", &systime, "show time", 128, 3);
-  cmd = IT_AddCommand("ts", 0, "", &ts, "show threads", 128, 3);
-  IT_AddFlag(cmd, 'l', 0, "", &ts_l, "show threads in long format", 512, 0);
-  IT_AddFlag(cmd, 'c', 0, "", &ts_c, "count threads", 128, 3);
-  cmd = IT_AddCommand("killall", 1, "[name]", &killall, "kill running thread", 128, 1);
+  cmd = IT_AddCommand("jitter", 0, "", &jitter, "show jitter", 128, 4);
+  IT_AddFlag(cmd, 'h', 0, "", &jitter_h, "print jitter histogram", 128, 4);
+  cmd = IT_AddCommand("time", 0, "", &systime, "show time", 128, 4);
+  cmd = IT_AddCommand("ts", 0, "", &ts, "show threads", 128, 4);
+  IT_AddFlag(cmd, 'l', 0, "", &ts_l, "show threads in long format", 512, 4);
+  IT_AddFlag(cmd, 'c', 0, "", &ts_c, "count threads", 128, 4);
+  cmd = IT_AddCommand("killall", 1, "[name]", &killall, "kill running thread", 128, 4);
 
   OS_InitSemaphore("open_free", &OPEN_FREE, 1);
 
   ADC_InitIT();
   OS_AddThread("idle", &OS_Idle, 128, NUM_PRIORITIES - 1);
-  OS_AddThread("bash", &Interpreter, 512, NUM_PRIORITIES - 2);
+  OS_AddThread("bash", &Interpreter, 740, 3);
   OS_AddThread("fsinit", &OS_FsInit, 512, 0);
   OS_Fifo_Init(256);
 }
@@ -963,6 +963,8 @@ void *doServiceCall(int svcNum, void *arg0, void *arg1, void *arg2) {
 
 void OS_InitSemaphore(char *name, sema_t *s, int val) {
   sema_t *current = SemaPt;
+	long sr = OS_StartCritical();
+
   strcpy(s->name, name);
   if (SemaPt == 0) {
     SemaPt = s;
@@ -971,10 +973,12 @@ void OS_InitSemaphore(char *name, sema_t *s, int val) {
     s->next = SemaPt;
     SemaPt = s;
   }
+
   s->value = val;
   s->max = val;
   s->blocked = NULL;
   s->who = NULL;
+	OS_EndCritical(sr);
 }
 
 void OS_bWait(sema_t *s) {
