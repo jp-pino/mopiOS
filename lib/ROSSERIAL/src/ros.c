@@ -388,6 +388,10 @@ void rosnegotiate(void) {
 	}
 }
 
+void sender(void) {
+	ROS_MailBox_Send()
+}
+
 // Main thread
 void rosmain(void) {
 	rospacket_t *message;
@@ -415,7 +419,7 @@ void rosmain(void) {
 	}
 
 	// Launch all publishers
-	publisher= ROSPublishers;
+	publisher = ROSPublishers;
 	while (publisher) {
 		OS_bSignal(&(publisher->start));
 		publisher = publisher->next;
@@ -432,7 +436,7 @@ void rosmain(void) {
 			if (subscriber)
 				ROS_MailBox_Send(&(subscriber->mailbox), message);
 		} else {
-			while(1);
+			// while(1);
 		}
 
 		// Free memory for new message

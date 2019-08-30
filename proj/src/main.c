@@ -22,7 +22,11 @@ sema_t PRINT, PRINTED;
 void ROSBoolPublisherExample(void) {
 	rospacket_t *message;
 	rosbool_t *boolmessage;
+
+	// Run ROS_PublisherInit() once for synchronization purposes
+	// ROS_FindPublisher() returns this publisher
 	ROS_PublisherInit(ROS_FindPublisher());
+
 	while(1) {
 		// Setup data to transmit
 		boolmessage = Heap_Malloc(sizeof(rosbool_t));
@@ -32,6 +36,8 @@ void ROSBoolPublisherExample(void) {
 		message = Heap_Malloc(sizeof(rospacket_t));
 		message->length = ROS_BOOL_LEN;
 		message->topic_id = ROS_FindPublisher()->topic_id;
+
+		// Serialize data
 		message->data = ROS_BoolSerialize(boolmessage);
 
 		// Transmit packet
@@ -67,13 +73,13 @@ void ROSBoolSubscriberExample(void) {
 	}
 }
 
-
 // OS and modules initialization
 int main(void){        // lab 4 real main
   // Initialize the OS
   OS_Init();           // initialize, disable interrupts
   // Initialize other modules
 	// UART1_Init();
+	IT_AddCommand("test", 0, "", &test, "test", 128, 4);
 
 	OS_InitSemaphore("print", &PRINT, 0);
 	OS_InitSemaphore("print", &PRINTED, 0);
