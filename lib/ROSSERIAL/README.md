@@ -12,11 +12,11 @@ Not all message types are supported yet. The following have been tested to work:
 Before launching `rosmain` using `ROS_Launch()`, first you must register your publishers and subscribers.
 
 For example, to register a publisher using `std_msgs/Bool` and **status** as topic name run:
-```
+```c
 ROS_AddPublisher("status", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolPublisherExample, 512, 2);
 ```
 Here `&ROSBoolPublisherExample` is the thread that will be sending these kinds of messages. All publishers must run `ROS_PublisherInit(ROS_FindPublisher())` to synchronize with the `rosmain`. For example:
-```
+```c
 void ROSBoolPublisherExample(void) {
 	rospacket_t *message;
 	rosbool_t *boolmessage;
@@ -52,12 +52,12 @@ void ROSBoolPublisherExample(void) {
 ```
 
 To register a subscriber the prototype is basically the same. For example, to register a subscriber that listens for messages of type `std_msgs/Bool` and **action** as topic name run:
-```
+```c
 ROS_AddSubscriber("action", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolSubscriberExample, 512, 2);
 ```
 
 The callback function `&ROSBoolSubscriberExample` must also synchronize with `rosmain` using `ROS_SubscriberInit(ROS_FindSubscriber())` and also must listen for messages from `rosmain` on the mailbox:
-```
+```c
 void ROSBoolSubscriberExample(void) {
 	rospacket_t *message;
 	rosbool_t *boolmessage;
