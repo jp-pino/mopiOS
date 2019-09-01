@@ -10,12 +10,10 @@
 #include "UART.h"
 #include "ros.h"
 #include "Bool.h"
+#include "Int32.h"
 #include "Heap.h"
 
 #define TIMESLICE TIME_1MS  // thread switch time in system time units
-
-sema_t PRINT, PRINTED;
-
 
 #define PF2 (*((volatile uint32_t *)0x40025010))
 
@@ -52,6 +50,41 @@ void ROSBoolPublisherExample(void) {
 	}
 }
 
+void ROSInt32PublisherExample(void) {
+	rospacket_t *message;
+	rosint32_t *int32message;
+	int val = 1;
+
+	// Run ROS_PublisherInit() once for synchronization purposes
+	// ROS_FindPublisher() returns this publisher
+	ROS_PublisherInit(ROS_FindPublisher());
+
+	while(1) {
+		// Setup data to transmit
+		int32message = Heap_Malloc(sizeof(rosint32_t));
+		int32message->data = val;
+
+		// Setup packet to transmit
+		message = Heap_Malloc(sizeof(rospacket_t));
+		message->length = ROS_INT32_LEN;
+		message->topic_id = ROS_FindPublisher()->topic_id;
+
+		// Serialize data
+		message->data = ROS_Int32Serialize(int32message);
+
+		// Transmit packet
+		ROS_Publish(message);
+		OS_Sleep(1000);
+
+		// Free data memory
+		ROS_Int32Free(int32message);
+
+		// Free packet memory
+		ROS_PacketFree(message);
+		val++;
+	}
+}
+
 void ROSBoolSubscriberExample(void) {
 	rospacket_t *message;
 	rosbool_t *boolmessage;
@@ -78,17 +111,13 @@ int main(void){        // lab 4 real main
   // Initialize the OS
   OS_Init();           // initialize, disable interrupts
   // Initialize other modules
-	// UART1_Init();
-	IT_AddCommand("test", 0, "", &test, "test", 128, 4);
-
-	OS_InitSemaphore("print", &PRINT, 0);
-	OS_InitSemaphore("print", &PRINTED, 0);
 
   // Add Threads
   // OS_AddThread(..., ..., ...);
 
 	// Add Topics
 	ROS_AddPublisher("pos_x", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolPublisherExample, 512, 2);
+	ROS_AddPublisher("int_t", ROS_Int32MSG(), ROS_Int32MD5(), &ROSInt32PublisherExample, 512, 2);
 	ROS_AddSubscriber("test", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolSubscriberExample, 512, 2);
 
   // Launch the OS

@@ -6,6 +6,9 @@ This is my own personal implementation of the rosserial protocol.
 ## Supported messages
 Not all message types are supported yet. The following have been tested to work:
 - std_msgs/Bool
+- std_msgs/Int32
+- std_msgs/UInt32
+- std_msgs/Int16
 - rosserial_msgs/TopicInfo
 
 ## Instructions
@@ -80,4 +83,4 @@ void ROSBoolSubscriberExample(void) {
 }
 ```
 
-Now that we've set up our publishers and subscribers, we can run `OS_Launch()` from another thread to initialize our environment and connect to the `rosserial_python` server.
+Now that we've set up our publishers and subscribers, we can run `ROS_Launch()` from another thread to initialize our environment and connect to the `rosserial_python` server. It is important to note that `ROS_Launch()` must be executed **before** `rosserial_python` is launched.

@@ -1,7 +1,7 @@
 #ifndef __BOOL_H__
 #define __BOOL_H__
 
-#define ROS_BOOL_LEN 1
+#define ROS_BOOL_LEN sizeof(unsigned char)
 
 #include "ros.h"
 

@@ -16,7 +16,7 @@ unsigned char* ROS_BoolSerialize(rosbool_t *rosbool) {
 	unsigned char *data;
 
 	//Allocate memory for serialization
-	data = Heap_Malloc(sizeof(unsigned char) * ROS_BOOL_LEN);
+	data = Heap_Malloc(ROS_BOOL_LEN);
 	if (data == 0)
 		return 0;
 
@@ -33,7 +33,7 @@ rosbool_t* ROS_BoolDeserialize(rospacket_t *message) {
 		return 0;
 
 	// Parse message
-	if (message->length == 1){
+	if (message->length == ROS_BOOL_LEN){
 		parse->data = message->data;
 		return parse;
 	}

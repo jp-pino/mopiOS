@@ -74,7 +74,12 @@ IPATH += \
 	${ROOT}/lib/UART/inc           \
 	${ROOT}/lib/UART1/inc          \
 	${ROOT}/lib/ROSSERIAL/inc      \
-	$/inc           							 \
+	${ROOT}/lib/ROSSERIAL/msgs/rosserial_msgs/TopicInfo     \
+	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Bool      					\
+	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Float64      				\
+	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Int32	      				\
+	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/UInt32	      			\
+	$/inc           							 													\
 
 #
 # The default rule
@@ -111,8 +116,11 @@ ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/PING/src/Ultrasonic.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/SD/src/diskio.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/SD/src/ff.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/src/ros.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/src/Bool.o
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/src/TopicInfo.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/rosserial_msgs/TopicInfo/TopicInfo.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Bool/Bool.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Float64/Float64.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Int32/Int32.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/UInt32/UInt32.o
 SCATTERgcc_$(PROJ_NAME)=${ROOT}/lib/_tm4c/tm4c123gxl.ld
 ENTRY_$(PROJ_NAME)=ResetISR
 CFLAGSgcc=-DTARGET_IS_TM4C123_RB1
