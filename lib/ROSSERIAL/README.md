@@ -5,6 +5,8 @@ This is my own personal implementation of the rosserial protocol.
 
 ## Supported messages
 Not all message types are supported yet. The following have been tested to work:
+- std_msgs/Float32 (using FPU for float)
+- std_msgs/Float64 (using software library for double)
 - std_msgs/Bool
 - std_msgs/Int32
 - std_msgs/UInt32

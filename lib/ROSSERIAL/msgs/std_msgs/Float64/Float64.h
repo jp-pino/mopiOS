@@ -1,5 +1,5 @@
-#ifndef __BOOL_H__
-#define __BOOL_H__
+#ifndef __FLOAT64_H__
+#define __FLOAT64_H__
 
 #define ROS_FLOAT64_LEN sizeof(double)
 

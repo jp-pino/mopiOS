@@ -132,38 +132,27 @@ ARMGCC_ROOT:=${shell dirname '${shell sh -c "which ${CC}"}'}/..
 #
 # Set the compiler CPU/FPU options.
 #
-# CPU=-mcpu=cortex-m4
-CPU=-mcpu=cortex-m4 -mfloat-abi=soft
-# FPU=-mfpu=fpv4-sp-d16 -mfloat-abi=hard
+CPU=-mcpu=cortex-m4
+# CPU=-mcpu=cortex-m4 -mfloat-abi=soft
+FPU=-mfpu=fpv4-sp-d16 -mfloat-abi=hard
 
 #
 # The flags passed to the assembler.
 #
-AFLAGS=-mthumb \
-       ${CPU}  \
-       -MD
-
 # AFLAGS=-mthumb \
 #        ${CPU}  \
-#        ${FPU}  \
 #        -MD
+
+AFLAGS=-mthumb \
+       ${CPU}  \
+       ${FPU}  \
+       -MD
 
 #
 # The flags passed to the compiler.
 #
-CFLAGS=-mthumb             \
-       ${CPU}              \
-       -ffunction-sections \
-       -fdata-sections     \
-       -MD                 \
-       -std=c99            \
-       -Wall               \
-       -pedantic           \
-       -DPART_${PART}      \
-       -c
 # CFLAGS=-mthumb             \
 #        ${CPU}              \
-#        ${FPU}              \
 #        -ffunction-sections \
 #        -fdata-sections     \
 #        -MD                 \
@@ -172,6 +161,17 @@ CFLAGS=-mthumb             \
 #        -pedantic           \
 #        -DPART_${PART}      \
 #        -c
+CFLAGS=-mthumb             \
+       ${CPU}              \
+       ${FPU}              \
+       -ffunction-sections \
+       -fdata-sections     \
+       -MD                 \
+       -std=c99            \
+       -Wall               \
+       -pedantic           \
+       -DPART_${PART}      \
+       -c
 
 
 #

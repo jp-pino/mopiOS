@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include "hw_nvic.h"
 #include "hw_types.h"
+#include "tm4c123gh6pm.h"
 
 //*****************************************************************************
 //
@@ -398,6 +399,9 @@ ResetISR(void)
     // enabled).  Any configuration of the floating-point unit using DriverLib
     // APIs must be done here prior to the floating-point unit being enabled.
     //
+		// Disable lazy state for FPU
+		NVIC_FPCC_R |= NVIC_FPCC_ASPEN;
+		NVIC_FPCC_R &= ~NVIC_FPCC_LSPEN;
     // Note that this does not use DriverLib since it might not be included in
     // this project.
     //

@@ -343,23 +343,42 @@ void OS_Launch(uint32_t timeSlice) {
 void SetInitialStack(tcb_t *tcb, void (*task)(void)) {
   // Allocate memory for stack
   tcb->sp = &tcb->stack[0];
-  tcb->sp[tcb->stackSize - 1] = 0x01000000; // thumb bit
-  tcb->sp[tcb->stackSize - 2] = (int)task;  // Set PC to task pointer
-  tcb->sp[tcb->stackSize - 3] = &OS_Kill; // R14 (LR) - Maybe set this to &OS_Kill
-  tcb->sp[tcb->stackSize - 4] = 0x12121212;  // R12
-  tcb->sp[tcb->stackSize - 5] = 0x03030303;  // R3
-  tcb->sp[tcb->stackSize - 6] = 0x02020202;  // R2
-  tcb->sp[tcb->stackSize - 7] = 0x01010101;  // R1
-  tcb->sp[tcb->stackSize - 8] = 0x00000000;  // R0
-  tcb->sp[tcb->stackSize - 9] = 0x11111111;  // R11
-  tcb->sp[tcb->stackSize - 10] = 0x10101010; // R10
-  tcb->sp[tcb->stackSize - 11] = 0x09090909; // R9
-  tcb->sp[tcb->stackSize - 12] = 0x08080808; // R8
-  tcb->sp[tcb->stackSize - 13] = 0x07070707; // R7
-  tcb->sp[tcb->stackSize - 14] = 0x06060606; // R6
-  tcb->sp[tcb->stackSize - 15] = 0x05050505; // R5
-  tcb->sp[tcb->stackSize - 16] = 0x04040404; // R4
-  tcb->sp += tcb->stackSize - 16;
+  tcb->sp[tcb->stackSize - 1] = 0x00000000; // S15
+  tcb->sp[tcb->stackSize - 2] = 0x00000000; // S14
+  tcb->sp[tcb->stackSize - 3] = 0x00000000; // S13
+  tcb->sp[tcb->stackSize - 4] = 0x00000000; // S12
+  tcb->sp[tcb->stackSize - 5] = 0x00000000; // S11
+  tcb->sp[tcb->stackSize - 6] = 0x00000000; // S10
+  tcb->sp[tcb->stackSize - 7] = 0x00000000; // S9
+  tcb->sp[tcb->stackSize - 8] = 0x00000000; // S8
+  tcb->sp[tcb->stackSize - 9] = 0x00000000; // S7
+  tcb->sp[tcb->stackSize - 10] = 0x00000000; // S6
+  tcb->sp[tcb->stackSize - 11] = 0x00000000; // S5
+  tcb->sp[tcb->stackSize - 12] = 0x00000000; // S4
+  tcb->sp[tcb->stackSize - 13] = 0x00000000; // S3
+  tcb->sp[tcb->stackSize - 14] = 0x00000000; // S2
+  tcb->sp[tcb->stackSize - 15] = 0x00000000; // S1
+  tcb->sp[tcb->stackSize - 16] = 0x00000000; // S0
+  tcb->sp[tcb->stackSize - 17] = 0x00000000; // FPSCR
+  tcb->sp[tcb->stackSize - 18] = 0x00000000; // FPSCR
+  tcb->sp[tcb->stackSize - 19] = 0x01000000; // thumb bit PSR
+  tcb->sp[tcb->stackSize - 20] = (int)task;  // Set PC to task pointer
+  tcb->sp[tcb->stackSize - 21] = &OS_Kill; // R14 (LR) - Maybe set this to &OS_Kill
+  tcb->sp[tcb->stackSize - 22] = 0x12121212;  // R12
+  tcb->sp[tcb->stackSize - 23] = 0x03030303;  // R3
+  tcb->sp[tcb->stackSize - 24] = 0x02020202;  // R2
+  tcb->sp[tcb->stackSize - 25] = 0x01010101;  // R1
+  tcb->sp[tcb->stackSize - 26] = 0x00000000;  // R0
+  tcb->sp[tcb->stackSize - 27] = 0x11111111;  // R11
+  tcb->sp[tcb->stackSize - 28] = 0x10101010; // R10
+  tcb->sp[tcb->stackSize - 29] = 0x09090909; // R9
+  tcb->sp[tcb->stackSize - 30] = 0x08080808; // R8
+  tcb->sp[tcb->stackSize - 31] = 0x07070707; // R7
+  tcb->sp[tcb->stackSize - 32] = 0x06060606; // R6
+  tcb->sp[tcb->stackSize - 33] = 0x05050505; // R5
+  tcb->sp[tcb->stackSize - 34] = 0x04040404; // R4
+
+  tcb->sp += tcb->stackSize - 34;
 }
 
 /** Add one foreground thread to the scheduler

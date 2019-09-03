@@ -58,22 +58,20 @@ end
 define tcbs
   set var $l = 8
   set var $c = 0
-  if $arg0
-    while $c < $l
-      printf "\n\n---------------------"
-      printf "\nPriority %i", $c
-      printf "\n---------------------\n"
-      set var $last = 0
-      set var $curr = tcbLists[$c]
-        if $curr
-          while $last != tcbLists[$c].prev
-            set var $last = $curr
-            ptcb $curr
-            set var $curr = $curr->next
-          end
+  while $c < $l
+    printf "\n\n---------------------"
+    printf "\nPriority %i", $c
+    printf "\n---------------------\n"
+    set var $last = 0
+    set var $curr = tcbLists[$c]
+      if $curr
+        while $last != tcbLists[$c].prev
+          set var $last = $curr
+          ptcb $curr
+          set var $curr = $curr->next
         end
-      set var $c = $c + 1
-    end
+      end
+    set var $c = $c + 1
   end
 end
 

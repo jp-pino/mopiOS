@@ -64,6 +64,7 @@ typedef struct tcb_t {
   int isBlocked;
   int *stack;
   PCB *parent;
+	int fpu;
   char name[TCB_NAME_LEN + 1];
 } tcb_t;
 

@@ -76,6 +76,7 @@ IPATH += \
 	${ROOT}/lib/ROSSERIAL/inc      \
 	${ROOT}/lib/ROSSERIAL/msgs/rosserial_msgs/TopicInfo     \
 	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Bool      					\
+	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Float32      				\
 	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Float64      				\
 	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Int32	      				\
 	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/UInt32	      			\
@@ -118,6 +119,7 @@ ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/SD/src/ff.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/src/ros.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/rosserial_msgs/TopicInfo/TopicInfo.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Bool/Bool.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Float32/Float32.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Float64/Float64.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Int32/Int32.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/UInt32/UInt32.o

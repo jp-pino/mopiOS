@@ -11,6 +11,8 @@
 #include "ros.h"
 #include "Bool.h"
 #include "Int32.h"
+#include "Float32.h"
+#include "Float64.h"
 #include "Heap.h"
 
 #define TIMESLICE TIME_1MS  // thread switch time in system time units
@@ -85,6 +87,76 @@ void ROSInt32PublisherExample(void) {
 	}
 }
 
+void ROSFloat32PublisherExample(void) {
+	rospacket_t *message;
+	rosfloat32_t *float32message;
+	float val = 1.0f;
+
+	// Run ROS_PublisherInit() once for synchronization purposes
+	// ROS_FindPublisher() returns this publisher
+	ROS_PublisherInit(ROS_FindPublisher());
+
+	while(1) {
+		// Setup data to transmit
+		float32message = Heap_Malloc(sizeof(rosfloat32_t));
+		val += 0.1f;
+		float32message->data = val;
+
+		// Setup packet to transmit
+		message = Heap_Malloc(sizeof(rospacket_t));
+		message->length = ROS_FLOAT32_LEN;
+		message->topic_id = ROS_FindPublisher()->topic_id;
+
+		// Serialize data
+		message->data = ROS_Float32Serialize(float32message);
+
+		// Transmit packet
+		ROS_Publish(message);
+		OS_Sleep(1000);
+
+		// Free data memory
+		ROS_Float32Free(float32message);
+
+		// Free packet memory
+		ROS_PacketFree(message);
+	}
+}
+
+void ROSFloat64PublisherExample(void) {
+	rospacket_t *message;
+	rosfloat64_t *float64message;
+	double val = 1.0;
+
+	// Run ROS_PublisherInit() once for synchronization purposes
+	// ROS_FindPublisher() returns this publisher
+	ROS_PublisherInit(ROS_FindPublisher());
+
+	while(1) {
+		// Setup data to transmit
+		float64message = Heap_Malloc(sizeof(rosfloat64_t));
+		val += 0.1;
+		float64message->data = val;
+
+		// Setup packet to transmit
+		message = Heap_Malloc(sizeof(rospacket_t));
+		message->length = ROS_FLOAT64_LEN;
+		message->topic_id = ROS_FindPublisher()->topic_id;
+
+		// Serialize data
+		message->data = ROS_Float64Serialize(float64message);
+
+		// Transmit packet
+		ROS_Publish(message);
+		OS_Sleep(1000);
+
+		// Free data memory
+		ROS_Float64Free(float64message);
+
+		// Free packet memory
+		ROS_PacketFree(message);
+	}
+}
+
 void ROSBoolSubscriberExample(void) {
 	rospacket_t *message;
 	rosbool_t *boolmessage;
@@ -106,6 +178,7 @@ void ROSBoolSubscriberExample(void) {
 	}
 }
 
+
 // OS and modules initialization
 int main(void){        // lab 4 real main
   // Initialize the OS
@@ -113,12 +186,15 @@ int main(void){        // lab 4 real main
   // Initialize other modules
 
   // Add Threads
-  // OS_AddThread(..., ..., ...);
+  // OS_AddThread(..., ..., ..., ...);
 
 	// Add Topics
-	ROS_AddPublisher("pos_x", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolPublisherExample, 512, 2);
-	ROS_AddPublisher("int_t", ROS_Int32MSG(), ROS_Int32MD5(), &ROSInt32PublisherExample, 512, 2);
-	ROS_AddSubscriber("test", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolSubscriberExample, 512, 2);
+	// ROS_AddPublisher("pos_x", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolPublisherExample, 512, 2);
+	// ROS_AddPublisher("int_t", ROS_Int32MSG(), ROS_Int32MD5(), &ROSInt32PublisherExample, 512, 2);
+	ROS_AddPublisher("float64", ROS_Float64MSG(), ROS_Float64MD5(), &ROSFloat64PublisherExample, 512, 2);
+	ROS_AddPublisher("float32", ROS_Float32MSG(), ROS_Float32MD5(), &ROSFloat32PublisherExample, 512, 2);
+	// ROS_AddSubscriber("test", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolSubscriberExample, 512, 2);
+	// IT_AddCommand("add", 0, "", &add, "run test", 128, 4);
 
   // Launch the OS
   OS_Launch(TIMESLICE); // doesn't return, interrupts enabled in here

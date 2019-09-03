@@ -7,9 +7,7 @@ mopiOS is a Real Time Operating System for the TI TM4C123GH6PM Microcontroller.
 - Dynamic allocation for tcbs.
 - ROS Compatibility. For examples on using my rosserial port check [here](lib/ROSSERIAL).
 - API for [Interpreter](lib/INTERPRETER).
-
-## Upcoming
-- Support for FPU
+- FPU enabled for float operations!
 
 ## Extras
 Check out my other plugins for mopiOS:

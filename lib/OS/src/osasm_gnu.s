@@ -17,7 +17,7 @@
 // THIS SOFTWARE IS PROVIDED "AS IS".    NO WARRANTIES, WHETHER EXPRESS, IMPLIED
 // OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
 // MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
-// VALVANO SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL,
+// VALVANO SHALL NOT, IN ANY CIRCUMSTANCES, BE LIAblE FOR spECIAL, INCIDENTAL,
 // OR CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
 // For more information about my classes, my research, and my books, see
 // http://users.ece.utexas.edu/~valvano/
@@ -47,94 +47,124 @@
   .global    freeTCB
 
 
-// Returns highest PL with one thread in R0
+// Returns highest PL with one thread in r0
 // Returns 32 if no bits are set in the variable (no thread is available to run)
 
 .thumb_func
 SVC_Handler:
-  LDR       R0, [SP, #24]
-  LDRH      R0, [R0, #-2]
-  AND       R0, R0, #0xFF
-  // Load arg0, arg1, arg2 into R1, R2, R3
-  LDR       R1, [SP, #0]
-  LDR       R2, [SP, #4]
-  LDR       R3, [SP, #8]
-  PUSH      {LR}
-  BL        doServiceCall
-  POP       {LR}
-  STR       R0, [SP, #0]         // Store return value in R0 on stack
-  BX        LR
+  ldr       r0, [sp, #24]
+  ldrH      r0, [r0, #-2]
+  and       r0, r0, #0xFF
+  // Load arg0, arg1, arg2 into r1, r2, r3
+  ldr       r1, [sp, #0]
+  ldr       r2, [sp, #4]
+  ldr       r3, [sp, #8]
+  push      {lr}
+  bl        doServiceCall
+  pop       {lr}
+  str       r0, [sp, #0]         // Store return value in r0 on stack
+  bx        lr
 
 
 
 .thumb_func
 GetHighestPriority:
-  LDR       R0, =threadActiveBitField   // Address of bit field => R0
-  LDR       R0, [R0]                    // Value of bit field => R0
-  RBIT      R0, R0                      // Reverse bit order (32 bit word)
-  CLZ       R0, R0                      // # of leading zeroes of word => R0
-  BX        LR
+  ldr       r0, =threadActiveBitField   // Address of bit field => r0
+  ldr       r0, [r0]                    // Value of bit field => r0
+  rbit      r0, r0                      // Reverse bit order (32 bit word)
+  clz       r0, r0                      // # of leading zeroes of word => r0
+  bx        lr
 
 .thumb_func
 PendSV_Handler:
-  CPSID     I                     // Disable interrupts
-  PUSH      {R4-R11}              // Push registers not pushed by ISR
-  PUSH      {LR}
-  BL        GetHighestPriority    // Highest PL with a thread => R0
-  POP       {LR}
-  PUSH      {R0, LR}
-  MOV       R0, #2
-  BL        OS_LogEntry
-  POP       {R0, LR}
-  LDR       R1, =RunPt            // Address of RunPt => R1
-  LDR       R2, [R1]              // RunPt => R2
-  LDR       R4, [R1]
+  cpsid     i                     // Disable interrupts
+  push      {r4-r11}              // Push registers not pushed by ISR
+  push      {lr}
+  bl        GetHighestPriority    // Highest PL with a thread => r0
+  pop       {lr}
+  push      {r0, lr}
+  mov       r0, #2
+  bl        OS_LogEntry
+  pop       {r0, lr}
+  ldr       r1, =RunPt            // Address of RunPt => r1
+  ldr       r2, [r1]              // RunPt => r2
+  ldr       r4, [r1]
 cont:
-  LDR       R3, =roundRobin       // &roundRobin => R3
-  LDR       R3, [R3]              // roundRobin => R3
-  CMP       R3, #1                // if roundRobin, do round robin
-  BEQ       DoRoundRobin
-  LDR       R3, =tcbLists         // Address of tcbLists => R3
-  PUSH      {R0}
-  ADD       R3, R3, R0, LSL #2    // Add priority (x4 bc each element is 4 bytes) to address to index into tcbLists
-  POP       {R0}
-  LDR       R3, [R3]              // Load address of next TCB into R3
+  ldr       r3, =roundRobin       // &roundRobin => r3
+  ldr       r3, [r3]              // roundRobin => r3
+  cmp       r3, #1                // if roundRobin, do round robin
+  beq       DoRoundRobin
+  ldr       r3, =tcbLists         // Address of tcbLists => r3
+  push      {r0}
+  add       r3, r3, r0, LSL #2    // Add priority (x4 bc each element is 4 bytes) to address to index into tcbLists
+  pop       {r0}
+  ldr       r3, [r3]              // Load address of next TCB into r3
   B         contextSwitch
 DoRoundRobin:
-  LDR       R3, [R2, #4]          // RunPt->next => R3
-contextSwitch:                     // Expectations: &RunPt = R1, RunPt = R2, NextPt = R3
-  STR       SP, [R2]              // Save SP into current TCB
-  STR       R3, [R1]              // Store next TCB pointer to RunPt
-  LDR       SP, [R3]              // Load next stack pointer into SP
-  PUSH      {R0, R1, R2, LR}
-  LDR       R1, [R4, #32]         // RunPt->deleteThis => R3
-  CMP       R1, #0
-  MOV       R0, R4
-  BEQ       skipDelete
-  BL        freeTCB
+  ldr       r3, [r2, #4]          // RunPt->next => r3
+contextSwitch:                     // Expectations: &RunPt = r1, RunPt = r2, NextPt = r3
+  str       sp, [r2]              // Save sp into current TCB
+  str       r3, [r1]              // Store next TCB pointer to RunPt
+  ldr       sp, [r3]              // Load next stack pointer into sp
+  push      {r0, r1, r2, lr}
+  ldr       r1, [r4, #32]         // RunPt->deleteThis => r3
+  cmp       r1, #0
+  mov       r0, r4
+  beq       skipDelete
+  bl        freeTCB
 skipDelete:
-  POP       {R0, R1, R2, LR}
-  PUSH      {R0, LR}
-  MOV       R0, #1
-  BL        OS_LogEntry
-  POP       {R0, LR}
-  POP       {R4-R11}              // Pop registers not popped by ISR
-  CPSIE     I
-  BX        LR                    // Return from interrupt
+  pop       {r0, r1, r2, lr}
+  push      {r0, lr}
+  mov       r0, #1
+  bl        OS_LogEntry
+  pop       {r0, lr}
+  pop       {r4-r11}              // Pop registers not popped by ISR
+  cpsie     i
+  bx        lr                    // Return from interrupt
 
 .thumb_func
 StartOS:
-  LDR       R0, =RunPt            // currently running thread
-  LDR       R2, [R0]              // R2 = value of RunPt
-  LDR       SP, [R2]              // new thread SP SP = RunPt->stackPointer
-  POP       {R4-R11}              // restore regs r4-11
-  POP       {R0-R3}               // restore regs r0-3
-  POP       {R12}
-  POP       {LR}                  // discard LR from initial stack
-  POP       {LR}                  // start location
-  POP       {R1}                  // discard PSR
-  CPSIE     I                     // Enable interrupts at processor level
-  BX        LR                    // start first thread
+	// CPACR is located at address 0xE000ED88
+	ldr.W r0, =0xE000ED88
+	// Read CPACR
+	ldr r1, [r0]
+	// Set bits 20-23 to enable CP10 and CP11 coprocessors
+	orr r1, r1, #(0xF << 20)
+	// Write back the modified value to the CPACR
+	str r1, [r0]
+	// wait for store to complete
+	dsb
+	//reset pipeline now the FPU is enabled
+	isb
+  ldr       r0, =RunPt            // currently running thread
+  ldr       r2, [r0]              // r2 = value of RunPt
+  ldr       sp, [r2]              // new thread sp sp = RunPt->stackPointer
+  pop       {r4-r11}              // restore regs r4-11
+  pop       {r0-r3}               // restore regs r0-3
+  pop       {r12}
+  pop       {lr}                  // discard lr from initial stack
+  pop       {lr}                  // start location
+  pop       {r1}                  // discard PSR
+	pop				{r1}									// discard FPU
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+	pop				{r1}
+  cpsie     i                     // Enable interrupts at processor level
+  bx        lr                    // start first thread
 
   .align
   .end
