@@ -96,6 +96,7 @@ void* Heap_Realloc(void* oldBlock, int32_t desiredBytes);
 //  HEAP_ERROR_POINTER_OUT_OF_RANGE if pointer points outside the heap;
 //  HEAP_ERROR_CORRUPTED_HEAP if heap has been corrupted or trying to
 //  unallocate memory that has already been unallocated;
+int32_t OS_HeapFree(void* pointer);
 int32_t Heap_Free(void* pointer);
 
 

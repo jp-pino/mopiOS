@@ -120,6 +120,7 @@ void OS_Sleep(int);
 void OS_Suspend(void);
 int OS_Id(void);
 void OS_FsInit(void);
+unsigned long OS_ThreadCount(void);
 
 int OS_AddProcess(void(*entry)(void), void *text, void *data, int stackSize, int priority);
 

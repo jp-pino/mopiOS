@@ -88,6 +88,7 @@ int nextPId = 0;
 
 // Thread Globals
 tcb_t *RunPt = NULL;
+tcb_t *DeletePt = NULL;
 // List of currently active threads, indexed by priority level
 // (0-NUM_PRIORITIES-1) 0 is highest PL (priority level)
 tcb_t *tcbLists[NUM_PRIORITIES];
@@ -100,7 +101,7 @@ int32_t threadActiveBitField = 0;
 tcb_t *SleepPt = NULL;
 sema_t *SemaPt = 0;
 int nextThreadId = 0;
-int activeThreads = 0;
+unsigned long activeThreads = 0;
 unsigned long time, mstime;
 int timeslice;
 int osStarted = 0;
@@ -226,18 +227,13 @@ void OS_EndCritical(long sr) {
 
 /* OS Functions */
 
-void OS_Idle() {
+void OS_Idle(void) {
   while (1) {
-    PF1 &= 0x0;
-    PF1 &= 0x0;
-    PF1 &= 0x0;
-    PF1 &= 0x0;
-    PF1 &= 0x0;
-    PF1 &= 0x0;
-    PF1 &= 0x0;
-    PF1 &= 0x0;
-    PF1 &= 0x0;
-    PF1 |= 0x2;
+		// Debug
+		PF1 &= 0x0;
+		PF2 |= 0x4;
+		PF2 &= 0x0;
+		PF1 |= 0x2;
   }
 }
 
@@ -592,8 +588,8 @@ void insertThread(tcb_t *insert) {
 }
 
 void freeTCB(tcb_t *tcb) {
-  Heap_Free(tcb->stack);
-  Heap_Free(tcb);
+  OS_HeapFree(tcb->stack);
+  OS_HeapFree(tcb);
 }
 
 void OS_Kill(void) {
@@ -695,6 +691,10 @@ void OS_Suspend(void) {
 }
 
 int OS_Id(void) { return RunPt->id; }
+
+unsigned long OS_ThreadCount(void) {
+	return activeThreads;
+}
 
 /* Aperiodic Background Thread Functions */
 

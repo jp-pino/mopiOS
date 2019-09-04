@@ -347,8 +347,9 @@ void ts_l(void) {
 	long sr;
 
   IT_Init();
-
-  UART_OutString("\n\rid\tname\tstack\tpri\tsleep\tblock");
+	UART_OutString("\n\rtotal ");
+	UART_OutUDec(OS_ThreadCount());
+  UART_OutString("\n\rid\tname\t\tstack\tpri\tsleep\tblock");
 
 	// Scheduled tasks
   for (int i = 0; i < NUM_PRIORITIES; i++) {
@@ -359,6 +360,8 @@ void ts_l(void) {
         UART_OutUDec(thread->id);
         UART_OutString("\t");
         UART_OutString(thread->name);
+				if (strlen(thread->name) < 8)
+					UART_OutString("\t");
         UART_OutString("\t");
         UART_OutUDec(thread->stackSize);
         UART_OutString("\t");
@@ -378,7 +381,9 @@ void ts_l(void) {
       UART_OutUDec(thread->id);
       UART_OutString("\t");
       UART_OutString(thread->name);
-      UART_OutString("\t");
+			if (strlen(thread->name) < 8)
+				UART_OutString("\t");
+			UART_OutString("\t");
       UART_OutUDec(thread->stackSize);
       UART_OutString("\t");
       UART_OutUDec(thread->priority);
@@ -390,6 +395,8 @@ void ts_l(void) {
         UART_OutUDec(thread->id);
         UART_OutString("\t");
         UART_OutString(thread->name);
+				if (strlen(thread->name) < 8)
+					UART_OutString("\t");
         UART_OutString("\t");
         UART_OutUDec(thread->stackSize);
         UART_OutString("\t");
@@ -410,6 +417,8 @@ void ts_l(void) {
         UART_OutUDec(thread->id);
         UART_OutString("\t");
         UART_OutString(thread->name);
+				if (strlen(thread->name) < 8)
+					UART_OutString("\t");
         UART_OutString("\t");
         UART_OutUDec(thread->stackSize);
         UART_OutString("\t");
@@ -424,7 +433,9 @@ void ts_l(void) {
           UART_OutUDec(thread->id);
           UART_OutString("\t");
           UART_OutString(thread->name);
-          UART_OutString("\t");
+					if (strlen(thread->name) < 8)
+						UART_OutString("\t");
+	        UART_OutString("\t");
           UART_OutUDec(thread->stackSize);
           UART_OutString("\t");
           UART_OutUDec(thread->priority);

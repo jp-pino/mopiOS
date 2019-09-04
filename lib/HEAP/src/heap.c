@@ -233,13 +233,59 @@ void* Heap_Realloc(void* oldBlock, int32_t desiredBytes){
 //  HEAP_ERROR_POINTER_OUT_OF_RANGE if pointer points outside the heap;
 //  HEAP_ERROR_CORRUPTED_HEAP if heap has been corrupted or trying to
 //  unallocate memory that has already been unallocated;
+int32_t OS_HeapFree(void* pointer){
+  int32_t* blockStart;
+  int32_t* blockEnd;
+  int32_t* nextBlockStart;
+
+  blockStart = ((int32_t*)pointer) - 1;
+
+  //-----Begin error checking-------
+  if(!inHeapRange(blockStart)){
+    OS_bSignal(&HEAP_FREE);
+    return HEAP_ERROR_POINTER_OUT_OF_RANGE;
+  }
+  if(blockUnused(blockStart)){
+    OS_bSignal(&HEAP_FREE);
+    return HEAP_ERROR_CORRUPTED_HEAP;
+  }
+  blockEnd = blockTrailer(blockStart);
+  if(!inHeapRange(blockEnd) || blockUnused(blockEnd)){
+    OS_bSignal(&HEAP_FREE);
+    return HEAP_ERROR_CORRUPTED_HEAP;
+  }
+  //-----End error checking-------
+
+  if(markBlockUnused(blockStart)){
+    OS_bSignal(&HEAP_FREE);
+    return HEAP_ERROR_CORRUPTED_HEAP;
+  }
+
+  // time to possibly merge with block above
+  // first, make sure there IS a block above us
+  if(blockStart > HEAP_START){
+    int32_t* previousBlockStart = previousBlockHeader(blockStart);
+    // second, make sure we only merge with an unused block
+    if(blockUnused(previousBlockStart)){
+      mergeBlockWithBelow(previousBlockStart);
+      blockStart = previousBlockStart; // start of block has moved
+    }
+  }
+
+  // possibly merge with block below
+  nextBlockStart = nextBlockHeader(blockStart);
+  if(inHeapRange(nextBlockStart) && blockUnused(nextBlockStart)){
+    mergeBlockWithBelow(blockStart);
+  }
+  return HEAP_OK;
+}
+
 int32_t Heap_Free(void* pointer){
   int32_t* blockStart;
   int32_t* blockEnd;
   int32_t* nextBlockStart;
 
   OS_bWait(&HEAP_FREE);
-
   blockStart = ((int32_t*)pointer) - 1;
 
   //-----Begin error checking-------
@@ -520,7 +566,7 @@ void mem(void) {
   memory_t *el = list;
 
   IT_Init();
-  
+
   while (el != 0) {
     UART_OutString("\r\n  ");
     UART_OutString(el->name);

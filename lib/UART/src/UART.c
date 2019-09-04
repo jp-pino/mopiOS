@@ -272,9 +272,16 @@ void UART0_Handler(void){
 // Output String (NULL termination)
 // Input: pointer to a NULL-terminated string to be transferred
 // Output: none
+// Output: none
+void UART_OutStringRec(char *pt){
+  while(*pt){
+    UART_OutChar(*pt);
+    pt++;
+  }
+}
+
 void UART_OutString(char *pt){
   OS_bWait(&UART_FREE);
-  func = 16;
   while(*pt){
     UART_OutChar(*pt);
     pt++;
@@ -293,7 +300,6 @@ void UART_OutString(char *pt){
 unsigned long UART_InUDec(void){
   unsigned long number=0, length=0;
   char character;
-  func = 17;
   character = UART_InChar();
   while(character != CR){
   // accepts until <enter> is typed
@@ -324,7 +330,6 @@ unsigned long UART_InUDec(void){
 void UART_OutUDecRec(unsigned long n){
 // This function uses recursion to convert decimal number
 //   of unspecified length as an ASCII string
-  func = 18;
   if(n >= 10){
     UART_OutUDecRec(n/10);
     n = n%10;
@@ -336,7 +341,6 @@ void UART_OutUDec(unsigned long n){
 // This function uses recursion to convert decimal number
 //   of unspecified length as an ASCII string
   OS_bWait(&UART_FREE);
-  func = 19;
   if(n >= 10){
     UART_OutUDecRec(n/10);
     n = n%10;
@@ -351,7 +355,6 @@ void UART_OutUDec(unsigned long n){
 // Output: none
 // Fixed format 3 digits with space after
 void UART_OutUDec3(unsigned long n){
-  func = 20;
   if(n>999){
     UART_OutString("***");
   }else if(n >= 100){
@@ -378,7 +381,6 @@ void UART_OutUDec3(unsigned long n){
 // Output: none
 // Fixed format 5 digits with space after
 void UART_OutUDec5(unsigned long n){
-  func = 21;
   if(n>99999){
     UART_OutString("*****");
   }else if(n >= 10000){
@@ -430,7 +432,6 @@ void UART_OutUDec5(unsigned long n){
 // Output: none
 // Variable format 1-10 digits with no space before or after
 void UART_OutSDec(long n){
-  func = 22;
   if(n<0){
     UART_OutChar('-');
     n = -n;
@@ -450,7 +451,6 @@ void UART_OutSDec(long n){
 unsigned long UART_InUHex(void){
 unsigned long number=0, digit, length=0;
 char character;
-  func = 23;
   character = UART_InChar();
   while(character != CR){
     digit = 0x10; // assume bad
@@ -486,7 +486,6 @@ char character;
 // Output: none
 // Variable format 1 to 8 digits with no space before or after
 void UART_OutUHex(unsigned long number){
-  func = 24;
 // This function uses recursion to convert the number of
 //   unspecified length as an ASCII string
   if(number >= 0x10){
@@ -518,7 +517,6 @@ void UART_OutUHex(unsigned long number){
 void UART_InString(char *bufPt, uint16_t max) {
   int length = 0;
 	char character;
-  func = 25;
   character = UART_InChar();
   while (character != CR) {
     if (character == BS && length) {
@@ -554,7 +552,6 @@ void UART_InCMD(char *bufPt) {
   int i, memory = -1, length = 0;
 	char character;
   OS_bWait(&UART_FREE);
-  func = 26;
   character = UART_InChar();
   while (character != CR) {
     if (character == DEL) {
@@ -663,7 +660,6 @@ void UART_InCMD(char *bufPt) {
  */
 void Fixed_Fix2Str(long const num,char *string){
   short n;
-    func = 27;
   if((num>99999)||(num<-99990)){
     strcpy((char *)string," ***.**");
     return;
@@ -720,13 +716,11 @@ void Fixed_Fix2Str(long const num,char *string){
 // error     " ***.**"
 void UART_Fix2(long number){
   char message[10];
-    func = 28;
   Fixed_Fix2Str(number,message);
   UART_OutString(message);
 }
 
 void UART_SetColor(char color) {
-  func = 29;
   UART_OutChar(0x1B);
   UART_OutChar('[');
   switch (color) {
@@ -774,7 +768,6 @@ void UART_SetColor(char color) {
 
 void UART_OutError(char *string) {
   OS_bWait(&UART_FREE);
-  func = 30;
   UART_OutChar(0x1B);
   UART_OutChar('[');
   UART_OutChar('3');
@@ -793,7 +786,6 @@ void UART_OutError(char *string) {
 
 void UART_OutStringColor(char *string, char color) {
   OS_bWait(&UART_FREE);
-  func = 31;
   UART_OutChar(0x1B);
   UART_OutChar('[');
   switch (color) {
@@ -844,5 +836,16 @@ void UART_OutStringColor(char *string, char color) {
   UART_OutChar('[');
   UART_OutChar('0');
   UART_OutChar('m');
+  OS_bSignal(&UART_FREE);
+}
+
+void UART_OutFloat(float val, int n) {
+  OS_bWait(&UART_FREE);
+	UART_OutUDecRec((int)val);
+	UART_OutStringRec(".");
+	for (int i = 0; i < n; i++) {
+		val = val*10;
+		UART_OutUDecRec((int)val % 10);
+	}
   OS_bSignal(&UART_FREE);
 }

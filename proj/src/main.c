@@ -178,6 +178,36 @@ void ROSBoolSubscriberExample(void) {
 	}
 }
 
+float val = 0.0f;
+
+void ROSFloat32SubscriberExample(void) {
+	rospacket_t *message;
+	rosfloat32_t *float32message;
+	ROS_SubscriberInit(ROS_FindSubscriber());
+	while(1) {
+		// Wait for message
+		message = ROS_MailBox_Recv(&(ROS_FindSubscriber()->mailbox));
+		if (message) {
+			// Deserialize data
+			float32message = ROS_Float32Deserialize(message);
+			if (float32message) {
+				// Do whatever
+				val = float32message->data;
+				// Deallocate packet and data
+				ROS_Float32Free(float32message);
+				ROS_PacketFree(message);
+			}
+		}
+	}
+}
+
+void print_val(void) {
+	IT_Init();
+	UART_OutStringColor("\n\r  Float32: ", CYAN);
+	UART_OutFloat(val, 3);
+	IT_Kill();
+}
+
 
 // OS and modules initialization
 int main(void){        // lab 4 real main
@@ -188,13 +218,17 @@ int main(void){        // lab 4 real main
   // Add Threads
   // OS_AddThread(..., ..., ..., ...);
 
+
 	// Add Topics
 	// ROS_AddPublisher("pos_x", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolPublisherExample, 512, 2);
 	// ROS_AddPublisher("int_t", ROS_Int32MSG(), ROS_Int32MD5(), &ROSInt32PublisherExample, 512, 2);
 	ROS_AddPublisher("float64", ROS_Float64MSG(), ROS_Float64MD5(), &ROSFloat64PublisherExample, 512, 2);
 	ROS_AddPublisher("float32", ROS_Float32MSG(), ROS_Float32MD5(), &ROSFloat32PublisherExample, 512, 2);
 	// ROS_AddSubscriber("test", ROS_BoolMSG(), ROS_BoolMD5(), &ROSBoolSubscriberExample, 512, 2);
-	// IT_AddCommand("add", 0, "", &add, "run test", 128, 4);
+	ROS_AddSubscriber("floattest", ROS_Float32MSG(), ROS_Float32MD5(), &ROSFloat32SubscriberExample, 512, 2);
+
+	// Add commands
+	IT_AddCommand("float", 0, "", &print_val, "print subscriber value", 128, 4);
 
   // Launch the OS
   OS_Launch(TIMESLICE); // doesn't return, interrupts enabled in here

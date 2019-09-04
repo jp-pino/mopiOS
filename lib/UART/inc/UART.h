@@ -224,3 +224,4 @@ void UART_Fix2(long number);
 void UART_SetColor(char color);
 void UART_OutError(char *string);
 void UART_OutStringColor(char *string, char color);
+void UART_OutFloat(float val, int n);

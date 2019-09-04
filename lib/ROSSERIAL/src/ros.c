@@ -473,12 +473,9 @@ void rosmain(void) {
 			rosnegotiate();
 		} else if (message->topic_id == ROS_ID_TIME) {
 			time = ROS_TimeDeserialize(message);
-			ROS_TimeFree(time);
 		}
-
-		// Free memory for new message
-		Heap_Free(message->data);
-		Heap_Free(message);
+		ROS_TimeFree(time);
+		ROS_PacketFree(message);
 	}
 }
 
@@ -524,7 +521,7 @@ void ROS_Init(void) {
 void ROS_Launch(void) {
 	IT_Init();
 	// Launch main thread
-	OS_AddThread("ros", &rosmain, 1536, 1); // Same priority as interpreter
+	OS_AddThread("ros", &rosmain, 512, 1); // Same priority as interpreter
 	IT_Kill();
 }
 
