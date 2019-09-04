@@ -80,6 +80,7 @@ IPATH += \
 	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Float64      				\
 	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Int32	      				\
 	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/UInt32	      			\
+	${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Time		      			\
 	$/inc           							 													\
 
 #
@@ -123,6 +124,7 @@ ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Float32/Float
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Float64/Float64.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Int32/Int32.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/UInt32/UInt32.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ROSSERIAL/msgs/std_msgs/Time/Time.o
 SCATTERgcc_$(PROJ_NAME)=${ROOT}/lib/_tm4c/tm4c123gxl.ld
 ENTRY_$(PROJ_NAME)=ResetISR
 CFLAGSgcc=-DTARGET_IS_TM4C123_RB1

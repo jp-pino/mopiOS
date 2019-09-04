@@ -6,6 +6,9 @@
 #include "UART.h"
 #include "UART1.h"
 #include "TopicInfo.h"
+#include "Time.h"
+
+sema_t ROS_TIMER_READY;
 
 // Limitations:
 // 		- One subscriber per topic
@@ -376,6 +379,7 @@ void rosnegotiate(void) {
 		// Publish
 		if (message->data) {
 			ROS_Publish(message);
+
 		}
 
 		// Free memory for topic
@@ -389,28 +393,56 @@ void rosnegotiate(void) {
 	}
 }
 
-// void sender(void) {
-// 	ROS_MailBox_Send()
-// }
-
 // Main thread
 void rosmain(void) {
 	rospacket_t *message;
+	rostime_t *time;
 	rossubscriber_t *subscriber;
 	rospublisher_t *publisher;
 
-	// Topic negotiation
-
 	// Get topic request
 	while (UART1_InChar() != SYNC_F);
-	if (UART1_InChar() != PROT_F) OS_Kill();
-	if (UART1_InChar() != 0x00) OS_Kill();
-	if (UART1_InChar() != 0x00) OS_Kill();
-	if (UART1_InChar() != 0xFF) OS_Kill();
-	if (UART1_InChar() != 0x00) OS_Kill();
-	if (UART1_InChar() != 0x00) OS_Kill();
-	if (UART1_InChar() != 0xFF) OS_Kill();
+	if (UART1_InChar() != PROT_F) {
+		OS_AddThread("ros", &rosmain, 1536, 1);
+		OS_Kill();
+	}
+	if (UART1_InChar() != 0x00) {
+		OS_AddThread("ros", &rosmain, 1536, 1);
+		OS_Kill();
+	}
+	if (UART1_InChar() != 0x00) {
+		OS_AddThread("ros", &rosmain, 1536, 1);
+		OS_Kill();
+	}
+	if (UART1_InChar() != 0xFF) {
+		OS_AddThread("ros", &rosmain, 1536, 1);
+		OS_Kill();
+	}
+	if (UART1_InChar() != 0x00) {
+		OS_AddThread("ros", &rosmain, 1536, 1);
+		OS_Kill();
+	}
+	if (UART1_InChar() != 0x00) {
+		OS_AddThread("ros", &rosmain, 1536, 1);
+		OS_Kill();
+	}
+	if (UART1_InChar() != 0xFF) {
+		OS_AddThread("ros", &rosmain, 1536, 1);
+		OS_Kill();
+	}
+
+	// Topic negotiation
 	rosnegotiate();
+
+	// Request time
+	message = Heap_Malloc(sizeof(rospacket_t));
+	if (message) {
+		message->length = 0;
+		message->topic_id = ROS_ID_TIME;
+		message->data = 0;
+		ROS_Publish(message);
+		Heap_Free(message);
+	}
 
 	// Launch all subscribers
 	subscriber = ROSSubscribers;
@@ -426,18 +458,22 @@ void rosmain(void) {
 		publisher = publisher->next;
 	}
 
+	// Start timer to keep sync
+	OS_bSignal(&ROS_TIMER_READY);
+
 	// Listen for topics
 	while(1) {
 		message = message_in();
 		if (message == 0) continue;
-		if (message->topic_id == 0) {
-			rosnegotiate();
-		} else if (message->topic_id > 100) {
+	 	if (message->topic_id > 100) {
 			subscriber = ROS_FindSubscriberByTopic(message->topic_id);
 			if (subscriber)
 				ROS_MailBox_Send(&(subscriber->mailbox), message);
-		} else {
-			// while(1);
+		} else if (message->topic_id == 0) {
+			rosnegotiate();
+		} else if (message->topic_id == ROS_ID_TIME) {
+			time = ROS_TimeDeserialize(message);
+			ROS_TimeFree(time);
 		}
 
 		// Free memory for new message
@@ -446,13 +482,43 @@ void rosmain(void) {
 	}
 }
 
+void rostimer(void) {
+	rospacket_t *message;
+	float val = 1.0f;
+
+	// Run ROS_PublisherInit() once for synchronization purposes
+	// ROS_FindPublisher() returns this publisher
+	OS_bWait(&ROS_TIMER_READY);
+	while(1) {
+		// Setup packet to transmit
+		message = Heap_Malloc(sizeof(rospacket_t));
+		message->length = ROS_TIME_LEN;
+		message->topic_id = ROS_ID_TIME;
+
+		// Serialize data
+		message->data = 0;
+
+		// Transmit packet
+		ROS_Publish(message);
+		OS_Sleep(1000);
+
+		// Free packet memory
+		ROS_PacketFree(message);
+	}
+}
+
 // Initialize ------------------------------------------------------------
 // Called after declaring Publishers and Subscribers
 void ROS_Init(void) {
+	// Port initialization
 	UART1_Init();
 	// SEMAPHORE INITIALIZATION
 	OS_InitSemaphore("rosout", &ROS_PUBLISH_FREE, 1);
 	OS_InitSemaphore("rosadd", &ROS_ADD_FREE, 1);
+	OS_InitSemaphore("rostimer", &ROS_TIMER_READY, 0);
+
+	// Add timer thread
+	OS_AddThread("rostimer", &rostimer, 128, 5);
 }
 
 void ROS_Launch(void) {
