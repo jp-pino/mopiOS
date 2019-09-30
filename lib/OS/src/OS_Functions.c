@@ -6,6 +6,7 @@
 #include "ff.h"
 #include "Interpreter.h"
 #include "ST7735.h"
+#include "Heap.h"
 
 extern char paramBuffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
 extern sema_t OPEN_FREE;
@@ -19,6 +20,8 @@ extern sema_t *SemaPt;
 extern unsigned long JitterHistogram1[JITTERSIZE];
 extern unsigned long JitterHistogram2[JITTERSIZE];
 extern log_entry LOG[LOG_MAX_ENTRY];
+extern DIR cwd;
+extern char path[50];
 
 
 // Symbol table
@@ -60,34 +63,26 @@ void open(void) {
 
 // List directories
 void ls(void) {
-  DIR cwd;
   FILINFO f;
   int i;
 
   IT_Init();
-
   UART_OutString("\n\r");
-  f_opendir(&cwd, "/");
   f_readdir(&cwd, &f);
   while (f.fname[0] != 0) {
-    UART_OutString(f.fname);
+    UART_OutString(tolowercase(f.fname));
     UART_OutString("\t");
     f_readdir(&cwd, &f);
   }
-  f_closedir(&cwd);
   IT_Kill();
 }
 
 // List direcotires in long format
 void ls_l(void) {
-  DIR cwd;
   FILINFO f;
   int i = 0;
 
   IT_Init();
-
-
-  f_opendir(&cwd, "/");
   f_readdir(&cwd, &f);
   while (f.fname[0] != 0) {
     i++;
@@ -96,21 +91,21 @@ void ls_l(void) {
   UART_OutString("\n\rtotal ");
   UART_OutUDec(i);
 
-  f_opendir(&cwd, "/");
+  f_readdir(&cwd, 0);
   f_readdir(&cwd, &f);
   while (f.fname[0] != 0) {
     // Attributes
-    if (f.fattrib & AM_DIR == AM_DIR) {
+    if ((((char)(f.fattrib) >> 4) & 0x01) == (char)(0x01)) {
       UART_OutString("\n\rd");
     } else {
       UART_OutString("\n\r-");
     }
-    if (f.fattrib & AM_RDO == AM_RDO) {
+    if ((((char)(f.fattrib) >> 0) & 0x01) == (char)(0x01)) {
       UART_OutString("r-");
     } else {
       UART_OutString("rw");
     }
-    if (strstr(f.fname, ".AXF") != NULL) {
+    if (strstr(f.fname, ".AXF") != NULL || strstr(f.fname, ".ELF") != NULL) {
       UART_OutString("x\t");
     } else {
       UART_OutString("-\t");
@@ -173,17 +168,30 @@ void ls_l(void) {
     UART_OutUDec((f.ftime >> 5) & 0x1F);
     UART_OutString("\t");
 
-    UART_OutString(f.fname);
+		if ((((char)(f.fattrib) >> 1) & 0x01) == (char)(0x01))
+			UART_OutString(".");
+    UART_OutString(tolowercase(f.fname));
     f_readdir(&cwd, &f);
   }
-  f_closedir(&cwd);
+  IT_Kill();
+}
+
+void cd(void) {
+	IT_Init();
+
+  IT_GetBuffer(paramBuffer);
+	if(f_chdir(paramBuffer[0]) != 0) {
+    UART_OutError("\n\r  ERROR: directory could not be found");
+	  IT_Kill();
+		return;
+	}
   IT_Kill();
 }
 
 // Create new file
 void touch(void) {
   int code;
-
+	char aux[60];
   IT_Init();
 
   IT_GetBuffer(paramBuffer);
@@ -202,7 +210,6 @@ void touch(void) {
 // Remove file
 void rm(void) {
   int code;
-
   IT_Init();
 
   IT_GetBuffer(paramBuffer);
@@ -258,7 +265,7 @@ void mkdir(void) {
   if (paramBuffer[0] == 0) {
     UART_OutError("\n\r  ERROR: must specify name");
   }
-  if (f_mkdir(paramBuffer[0]) == 0) {
+  if (f_mkdir(paramBuffer[0]) != 0) {
     UART_OutError("\n\r  ERROR: directory could not be created");
   }
   IT_Kill();
@@ -545,7 +552,8 @@ void killall(void) {
     if (thread) {
       do {
         if (strcmp(thread->name, paramBuffer[0]) == 0) {
-          removeThread(thread);
+          thread->prev->next = thread->next;
+          thread->next->prev = thread->prev;
           Heap_Free(thread->stack);
           Heap_Free(thread);
           UART_OutString("\n\r  Thread removed successfully");

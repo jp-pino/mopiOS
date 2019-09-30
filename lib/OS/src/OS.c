@@ -36,6 +36,8 @@
 #include "heap.h"
 #include "loader.h"
 #include "tm4c123gh6pm.h"
+#include "wifi.h"
+#include "watchdog.h"
 #include <stdint.h>
 #include <string.h>
 #include <ctype.h>
@@ -81,6 +83,9 @@ void StartOS(void);
 
 // Log Globals
 log_entry LOG[LOG_MAX_ENTRY] = {0};
+
+DIR cwd;
+char path[50];
 
 // Process globals
 PCB *pcbList = 0;
@@ -250,15 +255,19 @@ void OS_FsInit(void) {
       disk_set = 0;
       OS_Kill();
     }
+
+		f_opendir(&cwd, "/");
+
     // Add interpreter commands
-    IT_AddCommand("touch", 1, "[name]", &touch, "create new file", 128, 4);
-    IT_AddCommand("rm", 1, "[name]", &rm, "delete file", 128, 4);
-    IT_AddCommand("cat", 1, "[name]", &cat, "print file", 128, 4);
-    IT_AddCommand("mkdir", 1, "[name]", &mkdir, "make directory", 128, 4);
-    IT_AddCommand("df", 0, "", &df, "format disk", 128, 4);
-    cmd = IT_AddCommand("ls", 0, "", &ls, "print disk directory", 128, 4);
-    IT_AddFlag(cmd, 'l', 0, "", &ls_l, "list in long format", 128, 4);
-    IT_AddCommand("open", 1, "[name]", &open, "launch ELF file", 128, 4);
+    IT_AddCommand("touch", 1, "[name]", &touch, "create new file", 512, 4);
+    IT_AddCommand("rm", 1, "[name]", &rm, "delete file", 512, 4);
+    IT_AddCommand("cat", 1, "[name]", &cat, "print file", 512, 4);
+    IT_AddCommand("mkdir", 1, "[name]", &mkdir, "make directory", 512, 4);
+    IT_AddCommand("cd", 1, "[name]", &cd, "change directory", 512, 4);
+    IT_AddCommand("df", 0, "", &df, "format disk", 512, 4);
+    cmd = IT_AddCommand("ls", 0, "", &ls, "print disk directory", 512, 4);
+    IT_AddFlag(cmd, 'l', 0, "", &ls_l, "list in long format", 512, 4);
+    IT_AddCommand("open", 1, "[name]", &open, "launch ELF file", 512, 4);
 
     OS_Kill();
   }
@@ -276,7 +285,11 @@ void OS_Init(void) {
   PLL_Init(Bus80MHz); // set processor clock to 80 MHz
   PortF_Init();
   ST7735_InitR(INITR_REDTAB);
-  // ST7735_Message("OS Initialized");
+	ST7735_SetTextColor(ST7735_CYAN);
+	ST7735_OutString("Starting mopiOS!\n\n");
+
+	ST7735_SetTextColor(ST7735_WHITE);
+	ST7735_OutString("UART: initializing\n");
   UART_Init();
   NVIC_ST_CTRL_R = 0;    // disable SysTick during setup
   NVIC_ST_CURRENT_R = 0; // any write to current clears it
@@ -286,8 +299,10 @@ void OS_Init(void) {
       (NVIC_SYS_PRI3_R & 0x00FFFFFF) | (0 << 28); // SysTick = priority 0
   NVIC_SYS_PRI2_R = (NVIC_SYS_PRI2_R & 0x00FFFFFF) | (3 << 28);
 
+	ST7735_OutString("Heap: initializing\n");
   Heap_Init();
 
+	ST7735_OutString("IT: adding commands\n");
   cmd = IT_AddCommand("mount", 0, "", &mount, "mount filesystem", 128, 4);
   IT_AddFlag(cmd, 'f', 0, "", &mount_f, "force", 128, 4);
 
@@ -304,15 +319,22 @@ void OS_Init(void) {
 
   OS_InitSemaphore("open_free", &OPEN_FREE, 1);
 
+	ST7735_OutString("ADC: initializing\n");
   ADC_InitIT();
   OS_AddThread("idle", &OS_Idle, 128, NUM_PRIORITIES - 1);
-  OS_AddThread("bash", &Interpreter, 740, 3);
+  OS_AddThread("bash", &Interpreter, 256, 3);
   OS_AddThread("fsinit", &OS_FsInit, 512, 0);
 
+	ST7735_OutString("ROS: initializing\n");
 	ROS_Init();
-  cmd = IT_AddCommand("ros", 0, "", &ROS_Launch, "launch ROS", 128, 4);
+  cmd = IT_AddCommand("ros", 0, "", &ROS_Launch, "launch ROS", 256, 4);
 
+	ST7735_OutString("FIFO: initializing\n");
   OS_Fifo_Init(256);
+
+	ST7735_OutString("WiFi: initializing\n");
+	WiFi_Init();
+
 }
 
 /** Start the scheduler, enable interrupts. Does not return.
@@ -320,6 +342,10 @@ void OS_Init(void) {
  */
 void OS_Launch(uint32_t timeSlice) {
   if (RunPt != 0) {
+		ST7735_OutString("Launching mopiOS!\n");
+		Output_Clear();
+		ST7735_SetCursor(0,0);
+		Watchdog_Init();
     timeslice = timeSlice;
     mstime = 0;
     time = 0;
@@ -452,10 +478,16 @@ tcb_t* OS_AddThread(char *name, void (*task)(void), int stackSize, int priority)
     new->stack[new->stackSize - 11] = new->parent->data;
   }
 
+	new->output = 0;
+
   activeThreads++;
 
   OS_EndCritical(sr);
   return new;
+}
+
+tcb_t* OS_CurrentThread(void) {
+	return RunPt;
 }
 
 int OS_AddProcess(void (*entry)(void), void *code, void *data, int stackSize, int priority) {
@@ -609,7 +641,6 @@ void OS_Kill(void) {
       Heap_Free(RunPt->parent->code);
       Heap_Free(RunPt->parent->data);
       Heap_Free(RunPt->parent);
-      PF0 ^= 0x01;
     }
   }
 

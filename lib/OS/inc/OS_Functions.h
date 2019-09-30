@@ -6,6 +6,7 @@
 void open(void);
 void ls(void);
 void ls_l(void);
+void cd(void);
 void touch(void);
 void rm(void);
 void cat(void);

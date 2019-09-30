@@ -81,14 +81,19 @@ void adc_o(void) {
 }
 
 void adc_i(void) {
-  uint16_t adc;
+  int16_t adc;
 
   IT_Init();
 
-  adc = ADC_In();
+  adc = ADC_In() - 2048;
 
   UART_OutString("\r\n    ");
-  UART_OutUDec3(adc);
+	if (adc < 0) {
+		UART_OutString("-");
+	  UART_OutUDec(-adc);
+	} else {
+	  UART_OutUDec(adc);
+	}
   IT_Kill();
 }
 

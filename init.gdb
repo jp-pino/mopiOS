@@ -27,7 +27,7 @@ define psema
     printf "NAME:      %s\n\n", $n->name
     printf "SEMA:      %p\n", $n
     printf "NEXT:      %p\n", $n->next
-    printf "BLOCKED:   %i\n", $n->blocked
+    printf "BLOCKED:   %p\n", $n->blocked
     printf "WHO:       %i\n", $n->who
     printf "VAL:       %d\n", $n->value
     printf "---------------------\n"

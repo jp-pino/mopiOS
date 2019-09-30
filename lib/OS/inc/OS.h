@@ -66,6 +66,7 @@ typedef struct tcb_t {
   PCB *parent;
 	int fpu;
   char name[TCB_NAME_LEN + 1];
+	int output;
 } tcb_t;
 
 /* Semaphore */
@@ -115,6 +116,7 @@ void OS_DisableInterrupts(void);
  * @return 1 if the thread was successfully added, 0 if not
  */
 tcb_t* OS_AddThread(char *name, void(*task)(void), int stackSize, int priority);
+tcb_t* OS_CurrentThread(void);
 void OS_Kill(void);
 void OS_Sleep(int);
 void OS_Suspend(void);

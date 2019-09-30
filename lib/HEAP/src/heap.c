@@ -242,22 +242,18 @@ int32_t OS_HeapFree(void* pointer){
 
   //-----Begin error checking-------
   if(!inHeapRange(blockStart)){
-    OS_bSignal(&HEAP_FREE);
     return HEAP_ERROR_POINTER_OUT_OF_RANGE;
   }
   if(blockUnused(blockStart)){
-    OS_bSignal(&HEAP_FREE);
     return HEAP_ERROR_CORRUPTED_HEAP;
   }
   blockEnd = blockTrailer(blockStart);
   if(!inHeapRange(blockEnd) || blockUnused(blockEnd)){
-    OS_bSignal(&HEAP_FREE);
     return HEAP_ERROR_CORRUPTED_HEAP;
   }
   //-----End error checking-------
 
   if(markBlockUnused(blockStart)){
-    OS_bSignal(&HEAP_FREE);
     return HEAP_ERROR_CORRUPTED_HEAP;
   }
 

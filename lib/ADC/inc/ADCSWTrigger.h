@@ -4,12 +4,12 @@
 // software and trigger a conversion, wait for it to finish,
 // and return the result.
 // Daniel Valvano, Jonathan Valvano
-// January 19, 2017 
+// January 19, 2017
 
 /* This example accompanies the books
    "Embedded Systems: Real Time Interfacing to ARM Cortex M Microcontrollers",
    ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2016
-   "Embedded Systems: Real-Time Operating Systems for ARM Cortex-M Microcontrollers", 
+   "Embedded Systems: Real-Time Operating Systems for ARM Cortex-M Microcontrollers",
    ISBN: 978-1466468863, Jonathan Valvano, copyright (c) 2017
  Copyright 2017 by Jonathan W. Valvano, valvano@mail.utexas.edu
     You may use, edit, run or distribute this file
@@ -102,7 +102,7 @@ void ADC_Init89(void);
 // Busy-wait Analog to digital conversion
 // Input: none
 // Output: two 12-bit result of ADC conversions
-// Samples ADC8 and ADC9 
+// Samples ADC8 and ADC9
 // 125k max sampling
 // software trigger, busy-wait sampling
 // data returned by reference
@@ -119,12 +119,13 @@ void ADC_In89(uint32_t data[2]);
 // SS2 4th sample source: Ain3 (PE0)
 // SS2 interrupts: enabled after 4th sample but not promoted to controller
 void ADC_Init3210(void);
+void ADC_Init10(void);
 
 //------------ADC_In3210------------
 // Busy-wait Analog to digital conversion
 // Input: none
 // Output: four 12-bit result of ADC conversions
-// Samples ADC0(PE3), ADC1(PE2), ADC2(PE1) and ADC3(PE0) 
+// Samples ADC0(PE3), ADC1(PE2), ADC2(PE1) and ADC3(PE0)
 // 125k max sampling
 // software trigger, busy-wait sampling
 // data returned by reference
@@ -133,11 +134,11 @@ void ADC_Init3210(void);
 // data[2] is ADC1 (PE2) 0 to 4095
 // data[3] is ADC0 (PE3) 0 to 4095
 void ADC_In3210(uint32_t data[4]);
+void ADC_In10(uint32_t data[2]);
 
 //------------ADC2millimeter------------
 // convert 12-bit ADC to distance in 1mm
 // it is known the expected range is 100 to 800 mm
-// Input:  adcSample 0 to 4095 
+// Input:  adcSample 0 to 4095
 // Output: distance in 1mm
 uint32_t ADC2millimeter(uint32_t adcSample);
-

@@ -196,7 +196,7 @@ void UART1_Init(void){
   GPIO_PORTC_DEN_R |= ((1 << 4) | (1 << 5) & 0xFF);             // enable digital I/O on PA1-0 -> PC4-5
                                         // configure PA1-0 as UART -> PC4-5
   GPIO_PORTC_PCTL_R = (GPIO_PORTC_PCTL_R&0xFF00FFFF)+0x00220000;
-  GPIO_PORTF_AMSEL_R &= ~((1 << 4) | (1 << 5) & 0xFF);             // disable analog functionality on PA -> PC
+  GPIO_PORTC_AMSEL_R &= ~((1 << 4) | (1 << 5) & 0xFF);             // disable analog functionality on PA -> PC
                                         // UART0=priority 2
   NVIC_PRI1_R = (NVIC_PRI1_R & 0xFF00FFFF) | (3 << 21); // bits 13-15
   NVIC_EN0_R |= NVIC_EN0_INT6;           // enable interrupt 6 in NVIC
