@@ -190,6 +190,7 @@ void UART5_OutUHex(unsigned long number);
  * @brief  UART5 input ASCII string.
  */
 void UART5_InString(char *bufPt, unsigned short max);
+void UART5_InResponse(char *bufPt, unsigned short max);
 
 //------------UART5_InCMD------------
 // Accepts ASCII characters from the serial port

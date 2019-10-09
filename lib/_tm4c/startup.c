@@ -571,6 +571,7 @@ void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress ) {
 
   /* When the following line is hit, the variables contain the register values. */
   for( ;; );
+
 }
 
 
@@ -578,6 +579,7 @@ void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress ) {
 prvGetRegistersFromStack(). */
 static void HardFault_Handler(void)
 {
+		// NVIC_APINT_R = NVIC_APINT_VECTKEY | NVIC_APINT_SYSRESETREQ;
     __asm volatile
     (
         " tst lr, #4                                                \n"

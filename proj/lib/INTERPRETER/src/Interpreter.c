@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "tm4c123gh6pm.h"
 #include "Interpreter.h"
 #include "heap.h"
 #include "UART.h"
@@ -73,7 +74,7 @@ void printPrompt(void) {
 }
 
 void IT_Init(void) {
-	char aux[50];
+	static char aux[50];
 	f_getcwd(aux, 50);
 	f_closedir(&cwd);
 	f_opendir(&cwd, aux);
@@ -283,7 +284,10 @@ void Interpreter(void) {
       UART_OutString("\033[2J\033[H");
       printBanner();
       continue;
-    }
+    } else if (strcmp(word, "reboot") == 0) {
+			NVIC_APINT_R = NVIC_APINT_VECTKEY | NVIC_APINT_SYSRESETREQ;
+			continue;
+		}
 
     cmd = cmdList;
     // Go through all the commands in the array

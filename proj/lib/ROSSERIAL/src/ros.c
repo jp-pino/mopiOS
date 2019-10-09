@@ -264,7 +264,7 @@ rospacket_t* message_in(void) {
 
 	// Read message length
   length = UART1_InChar();
-	length = UART1_InChar() << 8 | length;
+	length = (((unsigned short)(UART1_InChar())) << 8) | length;
 	message->length = length;
 
 	// Read checksum and verify
@@ -275,7 +275,7 @@ rospacket_t* message_in(void) {
 	}
 
 	// Allocate memory for message data
-  message->data = Heap_Malloc(sizeof(unsigned char) * length);
+  message->data = Heap_Malloc(sizeof(unsigned char) * (message->length));
   if (message->data == 0) {
     Heap_Free(message);
     return 0;
@@ -304,7 +304,6 @@ void rosnegotiate(void) {
 	rostopicinfo_t *topic;
 	rossubscriber_t *subscriber;
 	rospublisher_t *publisher;
-	int i = 0;
 
 
 	// Register all subscribers
@@ -399,7 +398,7 @@ void rosmain(void) {
 	rostime_t *time;
 	rossubscriber_t *subscriber;
 	rospublisher_t *publisher;
-	
+
 	// Port initialization
 	UART1_Init();
 
@@ -484,7 +483,6 @@ void rosmain(void) {
 
 void rostimer(void) {
 	rospacket_t *message;
-	float val = 1.0f;
 
 	// Run ROS_PublisherInit() once for synchronization purposes
 	// ROS_FindPublisher() returns this publisher
@@ -522,7 +520,7 @@ void ROS_Init(void) {
 void ROS_Launch(void) {
 	IT_Init();
 	// Launch main thread
-	OS_AddThread("ros", &rosmain, 512, 1); // Same priority as interpreter
+	OS_AddThread("ros", &rosmain, 512, 1);
 	IT_Kill();
 }
 

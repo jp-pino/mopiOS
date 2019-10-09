@@ -7,6 +7,7 @@
 #include "Interpreter.h"
 #include "ST7735.h"
 #include "Heap.h"
+#include <stdlib.h>
 
 extern char paramBuffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
 extern sema_t OPEN_FREE;

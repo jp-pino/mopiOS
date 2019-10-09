@@ -79,6 +79,7 @@ IPATH += \
 	${ROOT}/proj/lib/WIFI/inc    \
 	${ROOT}/proj/lib/printf/inc      \
 	${ROOT}/proj/lib/ROSSERIAL/inc      \
+	${ROOT}/proj/lib/JOYSTICK/inc      \
 	${ROOT}/proj/lib/ROSSERIAL/msgs/rosserial_msgs/TopicInfo     \
 	${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Bool      					\
 	${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Float32      				\
@@ -86,6 +87,8 @@ IPATH += \
 	${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Int32	      				\
 	${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/UInt32	      			\
 	${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Time		      			\
+	${ROOT}/proj/lib/ROSSERIAL/msgs/geometry_msgs/Vector3		      			\
+	${ROOT}/proj/lib/ROSSERIAL/msgs/geometry_msgs/Twist		      			\
 	$/inc           							 													\
 
 #
@@ -135,7 +138,8 @@ CFLAGSgcc=-DTARGET_IS_TM4C123_RB1
 # *****************************************************************************
 # Main file
 ${BUILDPATH}/$(PROJ_NAME).axf: src/main.o
-${BUILDPATH}/$(PROJ_NAME).axf: src/joystick.o
+# Joystick
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/JOYSTICK/src/joystick.o
 # Interpreter
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/INTERPRETER/src/Interpreter.o
 # Wifi
@@ -149,8 +153,10 @@ ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Float64/
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Int32/Int32.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/UInt32/UInt32.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Time/Time.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/geometry_msgs/Vector3/Vector3.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/geometry_msgs/Twist/Twist.o
 # Ultrasonic
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/PING/src/Ultrasonic.o
+# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/PING/src/Ultrasonic.o
 # printf
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/printf/src/printf.o
 # *****************************************************************************

@@ -1,6 +1,7 @@
 #include "OS.h"
 #include "wifi.h"
 #include "UART.h"
+#include "UART5.h"
 #include "Interpreter.h"
 
 extern char paramBuffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];

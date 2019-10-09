@@ -11,6 +11,8 @@ Not all message types are supported yet. The following have been tested to work:
 - std_msgs/Int32
 - std_msgs/UInt32
 - std_msgs/Int16
+- geometry_msgs/Vector3
+- geometry_msgs/Twist
 - rosserial_msgs/TopicInfo
 
 ## Instructions

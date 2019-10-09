@@ -321,8 +321,8 @@ void OS_Init(void) {
 
 	ST7735_OutString("ADC: initializing\n");
   ADC_InitIT();
-  OS_AddThread("idle", &OS_Idle, 128, NUM_PRIORITIES - 1);
-  OS_AddThread("bash", &Interpreter, 256, 3);
+  OS_AddThread("idle", &OS_Idle, 96, NUM_PRIORITIES - 1);
+  OS_AddThread("bash", &Interpreter, 512, 3);
   OS_AddThread("fsinit", &OS_FsInit, 512, 0);
 
 	ST7735_OutString("ROS: initializing\n");
@@ -345,7 +345,7 @@ void OS_Launch(uint32_t timeSlice) {
 		ST7735_OutString("Launching mopiOS!\n");
 		Output_Clear();
 		ST7735_SetCursor(0,0);
-		Watchdog_Init();
+		//Watchdog_Init();
     timeslice = timeSlice;
     mstime = 0;
     time = 0;
