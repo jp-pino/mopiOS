@@ -67,6 +67,7 @@
 
 enum Direction{ BACKWARD, FORWARD, COAST};
 
+void DRV8848_Init(void);
 
 // period is 16-bit number of PWM clock cycles in one period (3<=period)
 // duty is number of PWM clock cycles output is high  (2<=duty<=period-1)

@@ -17,6 +17,15 @@ char paramBuffer[IT_MAX_PARAM_N][IT_MAX_CMD_LEN];
 sema_t *semaphore;
 sema_t IT_FREE;
 sema_t IT_READY;
+int fat = 0;
+
+void IT_setFAT(void) {
+	fat = 1;
+}
+
+int IT_isFAT(void) {
+	return fat;
+}
 
 // Helper functions
 int digits_only(const char *s) {
@@ -75,13 +84,16 @@ void printPrompt(void) {
 
 void IT_Init(void) {
 	static char aux[50];
+	if (IT_isFAT() == 0)
+		return;
 	f_getcwd(aux, 50);
 	f_closedir(&cwd);
 	f_opendir(&cwd, aux);
 }
 
 void IT_Kill(void) {
-	f_readdir(&cwd, 0);
+	if (IT_isFAT())
+		f_readdir(&cwd, 0);
   OS_bSignal(&(*semaphore));
   OS_Kill();
 }

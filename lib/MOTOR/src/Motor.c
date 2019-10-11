@@ -72,6 +72,14 @@
 #define PB5       (*((volatile uint32_t *)0x40005080))
 #define PB4       (*((volatile uint32_t *)0x40005040))
 
+sema_t motor_l_taken;
+sema_t motor_r_taken;
+
+void DRV8848_Init(void) {
+	OS_InitSemaphore("drv8848_l", &motor_l_taken, 1);
+	OS_InitSemaphore("drv8848_l", &motor_r_taken, 1);
+}
+
 // period is 16-bit number of PWM clock cycles in one period (3<=period)
 // duty is number of PWM clock cycles output is high  (2<=duty<=period-1)
 // PWM clock rate = processor clock rate/SYSCTL_RCC_PWMDIV
@@ -309,6 +317,7 @@ void DRV8848_RightStop(void){
 // Configures output on PB6, PB7 (one is GPIO other is PWM)
 // Motor board version 6 with DRV8848 dual H-bridge
 void DRV8848_RightInit(uint16_t period, uint16_t duty, enum Direction direction){
+	OS_bWait(&motor_r_taken);
   RightDirection = direction;
   RightPeriod = period;
   if(direction == COAST){
@@ -318,6 +327,7 @@ void DRV8848_RightInit(uint16_t period, uint16_t duty, enum Direction direction)
   }else{
     Right_InitB(period, period-duty, 1); // PB7 is negative logic duty, PB6 is 1
   }
+	OS_bSignal(&motor_r_taken);
 }
 
 // change duty cycle of right motor (PB7,PB6)
@@ -351,6 +361,7 @@ void DRV8848_RightDuty(uint16_t duty){
 // Configures output on PB4, PB5 (one is GPIO other is PWM)
 // Motor board version 6 with DRV8848 dual H-bridge
 void DRV8848_LeftInit(uint16_t period, uint16_t duty, enum Direction direction){
+	OS_bWait(&motor_l_taken);
   LeftDirection = direction;
   LeftPeriod = period;
   if(direction == COAST){
@@ -360,6 +371,7 @@ void DRV8848_LeftInit(uint16_t period, uint16_t duty, enum Direction direction){
   }else{
     Left_Init(period, period-duty, 1);  // PB4 is negative logic duty, PB5 is 1
   }
+	OS_bSignal(&motor_l_taken);
 }
 
 // Motor board version 6 with DRV8848 dual H-bridge

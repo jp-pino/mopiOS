@@ -475,9 +475,10 @@ void rosmain(void) {
 			rosnegotiate();
 		} else if (message->topic_id == ROS_ID_TIME) {
 			time = ROS_TimeDeserialize(message);
+			ROS_PacketFree(message);
 		}
 		ROS_TimeFree(time);
-		ROS_PacketFree(message);
+		// ROS_PacketFree(message);
 	}
 }
 
@@ -515,6 +516,7 @@ void ROS_Init(void) {
 
 	// Add timer thread
 	OS_AddThread("rostimer", &rostimer, 128, 5);
+	OS_AddThread("ros", &rosmain, 512, 1);
 }
 
 void ROS_Launch(void) {

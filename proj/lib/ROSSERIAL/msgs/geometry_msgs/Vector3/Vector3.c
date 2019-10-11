@@ -39,42 +39,28 @@ unsigned char* ROS_Vector3Serialize(rosvector3_t *rosvector3) {
 rosvector3_t* ROS_Vector3Deserialize(rospacket_t *message) {
 	rosvector3_t *parse;
 	unsigned long long serial;
+	unsigned char *aux = message->data;
 
 	// Allocate memory for parse
 	parse = Heap_Malloc(sizeof(rosvector3_t));
 	if (parse == 0)
 		return 0;
 
-	// Parse message'
-	if (message->length == ROS_VECTOR3_LEN){
-		serial = (((unsigned long long)(message->data[0])));
-		serial = (((unsigned long long)(message->data[1])) << 8)  | serial;
-		serial = (((unsigned long long)(message->data[2])) << 16) | serial;
-		serial = (((unsigned long long)(message->data[3])) << 24) | serial;
-		serial = (((unsigned long long)(message->data[4])) << 32) | serial;
-		serial = (((unsigned long long)(message->data[5])) << 40) | serial;
-		serial = (((unsigned long long)(message->data[6])) << 48) | serial;
-		serial = (((unsigned long long)(message->data[7])) << 56) | serial;
+	// Parse message
+	if (message->length == ROS_VECTOR3_LEN) {
+		serial = 0;
+		for (int i = 0; i < 8; i++)
+			serial = (((unsigned long long)(*(aux++))) << (8 * i)) | serial;
 		parse->x = *((double*)&(serial));
 
-		serial = (((unsigned long long)(message->data[8])));
-		serial = (((unsigned long long)(message->data[9])) << 8)   | serial;
-		serial = (((unsigned long long)(message->data[10])) << 16) | serial;
-		serial = (((unsigned long long)(message->data[11])) << 24) | serial;
-		serial = (((unsigned long long)(message->data[12])) << 32) | serial;
-		serial = (((unsigned long long)(message->data[13])) << 40) | serial;
-		serial = (((unsigned long long)(message->data[14])) << 48) | serial;
-		serial = (((unsigned long long)(message->data[15])) << 56) | serial;
+		serial = 0;
+		for (int i = 0; i < 8; i++)
+			serial = (((unsigned long long)(*(aux++))) << (8 * i)) | serial;
 		parse->y = *((double*)&(serial));
 
-		serial = (((unsigned long long)(message->data[16])));
-		serial = (((unsigned long long)(message->data[17])) << 8)  | serial;
-		serial = (((unsigned long long)(message->data[18])) << 16) | serial;
-		serial = (((unsigned long long)(message->data[19])) << 24) | serial;
-		serial = (((unsigned long long)(message->data[20])) << 32) | serial;
-		serial = (((unsigned long long)(message->data[21])) << 40) | serial;
-		serial = (((unsigned long long)(message->data[22])) << 48) | serial;
-		serial = (((unsigned long long)(message->data[23])) << 56) | serial;
+		serial = 0;
+		for (int i = 0; i < 8; i++)
+			serial = (((unsigned long long)(*(aux++))) << (8 * i)) | serial;
 		parse->z = *((double*)&(serial));
 
 		return parse;

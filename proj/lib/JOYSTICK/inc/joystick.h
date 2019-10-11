@@ -7,4 +7,7 @@
 
 void Joystick_Init(void);
 
+void Joystick_Enable(void);
+void Joystick_Disable(void);
+
 #endif

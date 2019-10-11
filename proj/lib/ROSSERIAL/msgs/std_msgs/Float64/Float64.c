@@ -35,6 +35,7 @@ unsigned char* ROS_Float64Serialize(rosfloat64_t *rosfloat64) {
 rosfloat64_t* ROS_Float64Deserialize(rospacket_t *message) {
 	rosfloat64_t *parse;
 	unsigned long long serial;
+	unsigned char *aux = message->data;
 
 	// Allocate memory for parse
 	parse = Heap_Malloc(sizeof(rosfloat64_t));
@@ -43,17 +44,11 @@ rosfloat64_t* ROS_Float64Deserialize(rospacket_t *message) {
 
 	// Parse message
 	if (message->length == ROS_FLOAT64_LEN){
-		serial = (unsigned long long)message->data[0];
-		serial = (unsigned long long)(message->data[1] << 8)  | serial;
-		serial = (unsigned long long)(message->data[2] << 16) | serial;
-		serial = (unsigned long long)(message->data[3] << 24) | serial;
-		serial = (unsigned long long)(message->data[4] << 32) | serial;
-		serial = (unsigned long long)(message->data[5] << 40) | serial;
-		serial = (unsigned long long)(message->data[6] << 48) | serial;
-		serial = (unsigned long long)(message->data[7] << 56) | serial;
+		serial = 0;
+		for (int i = 0; i < 8; i++)
+			serial = (((unsigned long long)(*(aux++))) << (8 * i)) | serial;
 
 		parse->data = *((double*)&(serial));
-
 		return parse;
 	}
 

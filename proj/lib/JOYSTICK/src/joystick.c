@@ -22,6 +22,8 @@
 #define JOYSTICK_MIN 2048.0
 #define JOYSTICK_MAX 2047.0
 
+int joystick_enable = 1;
+int joystick_idle = 0;
 
 // INPUTS
 int     nJoyXL;              // Joystick X input                     (-128..+127)
@@ -49,6 +51,7 @@ float   nMotPremixR;    // Motor (right) premixed output        (-128..+127)
 int     nPivSpeed;      // Pivot Speed                          (-128..+127)
 float   fPivScale;      // Balance scale b/w drive and pivot    (   0..1   )
 
+float left, right;
 
 int abs(int val) {
 	if (val >= 0)
@@ -63,24 +66,21 @@ int temp[2];
 // 	return (JOYSTICK_MAX) * (val/(-JOYSTICK_MAX)) * (val/(-JOYSTICK_MAX)) * (val/(-JOYSTICK_MAX)) * (val/(-JOYSTICK_MAX)) * (val/(-JOYSTICK_MAX)) * (val/(-JOYSTICK_MAX)) * (val/(-JOYSTICK_MAX));
 // }
 
+void Joystick_Enable(void) {
+	joystick_enable = 1;
+}
+
+void Joystick_Disable(void) {
+	joystick_enable = 0;
+}
+
 void Joystick_Main(void) {
 	ADC_Init10();
 	while(1) {
-		// if (ADC_Init(JOYSTICK_X_ADC))
-		// 	continue;
-		// OS_Sleep(100);
-		// nJoyX = ADC_In() - JOYSTICK_MIN;
-		//
-		// if ()
-		// 	continue;
-		// OS_Sleep(100);
 		ADC_In10(temp);
+
 		nJoyX = temp[0] - JOYSTICK_MIN;
 		nJoyY = temp[1] - JOYSTICK_MIN;
-		// nJoyX = -exp_scale(nJoyXL);
-		// nJoyY = -exp_scale(nJoyYL);
-
-
 
 		// Calculate Drive Turn output due to Joystick X input
 		if (nJoyY >= 0) {
@@ -107,48 +107,45 @@ void Joystick_Main(void) {
 		nMotMixL = (1.0f-fPivScale)*nMotPremixL + fPivScale*( nPivSpeed);
 		nMotMixR = (1.0f-fPivScale)*nMotPremixR + fPivScale*(-nPivSpeed);
 
+		left = nMotMixL*2.0f/4095.0f * MOTOR_PWM_PERIOD;
+		right = nMotMixR*2.0f/4095.0f * MOTOR_PWM_PERIOD;
+
 		// Convert to Motor PWM range
-		if (nMotMixL >= 2) {
-			DRV8848_LeftInit(MOTOR_PWM_PERIOD, nMotMixL*2.0f/4095.0f * MOTOR_PWM_PERIOD, FORWARD);
-			// ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L: ", nMotMixL*2.0f/4095.0f * MOTOR_PWM_PERIOD);
-		} else if (nMotMixL <= -2) {
-			DRV8848_LeftInit(MOTOR_PWM_PERIOD, -nMotMixL*2.0f/4095.0f * MOTOR_PWM_PERIOD, BACKWARD);
-			// ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L: -", -nMotMixL*2.0f/4095.0f * MOTOR_PWM_PERIOD);
-		} else {
-			DRV8848_LeftInit(MOTOR_PWM_PERIOD, 2, COAST);
-			// ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L: -", 0);
-		}
+		// if (joystick_enable) {
+			if (left >= 20) {
+				DRV8848_LeftInit(MOTOR_PWM_PERIOD, left, FORWARD);
+			} else if (left <= -20) {
+				DRV8848_LeftInit(MOTOR_PWM_PERIOD, -left, BACKWARD);
+			} else {
+				DRV8848_LeftInit(MOTOR_PWM_PERIOD, 2, COAST);
+			}
 
-		if (nMotMixR >= 2) {
-			DRV8848_RightInit(MOTOR_PWM_PERIOD, nMotMixR*2.0f/4095.0f * MOTOR_PWM_PERIOD, FORWARD);
-			// ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R: ", nMotMixR*2.0f/4095.0f * MOTOR_PWM_PERIOD);
-		} else if (nMotMixR <= -2) {
-			DRV8848_RightInit(MOTOR_PWM_PERIOD, -nMotMixR*2.0f/4095.0f * MOTOR_PWM_PERIOD, BACKWARD);
-			// ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R: -", -nMotMixR*2.0f/4095.0f * MOTOR_PWM_PERIOD);
-		} else {
-			DRV8848_RightInit(MOTOR_PWM_PERIOD, 2, COAST);
-			// ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R: -", 0);
-		}
-
+			if (right >= 20) {
+				DRV8848_RightInit(MOTOR_PWM_PERIOD, right, FORWARD);
+			} else if (right <= -20) {
+				DRV8848_RightInit(MOTOR_PWM_PERIOD, -right, BACKWARD);
+			} else {
+				DRV8848_RightInit(MOTOR_PWM_PERIOD, 2, COAST);
+			}
+		// }
 		OS_Sleep(150);
 	}
 }
 
 void Joystick_Print(void) {
 	while(1) {
-		if (nMotMixL >= 2) {
-			ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L:  ", nMotMixL*2.0f/4095.0f * MOTOR_PWM_PERIOD);
-		} else if (nMotMixL <= -2) {
-			ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L: -", -nMotMixL*2.0f/4095.0f * MOTOR_PWM_PERIOD);
+		if (left >= 20) {
+			ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L:  ", left);
+		} else if (left <= -20) {
+			ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L: -", -left);
 		} else {
-			DRV8848_LeftInit(MOTOR_PWM_PERIOD, 2, COAST);
 			ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L:  ", 0);
 		}
 
-		if (nMotMixR >= 2) {
-			ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R:  ", nMotMixR*2.0f/4095.0f * MOTOR_PWM_PERIOD);
-		} else if (nMotMixR <= -2) {
-			ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R: -", -nMotMixR*2.0f/4095.0f * MOTOR_PWM_PERIOD);
+		if (right >= 20) {
+			ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R:  ", right);
+		} else if (right <= -20) {
+			ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R: -", -right);
 		} else {
 			ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R:  ", 0);
 		}
@@ -158,5 +155,5 @@ void Joystick_Print(void) {
 
 void Joystick_Init(void) {
 	OS_AddThread("joystick", &Joystick_Main, 256, 4);
-	OS_AddThread("joy_print", &Joystick_Print, 256, 4);
+	OS_AddThread("joy_print", &Joystick_Print, 256, 5);
 }

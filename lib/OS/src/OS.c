@@ -257,6 +257,7 @@ void OS_FsInit(void) {
     }
 
 		f_opendir(&cwd, "/");
+		IT_setFAT();
 
     // Add interpreter commands
     IT_AddCommand("touch", 1, "[name]", &touch, "create new file", 512, 4);
@@ -334,6 +335,9 @@ void OS_Init(void) {
 
 	ST7735_OutString("WiFi: initializing\n");
 	WiFi_Init();
+
+	ST7735_OutString("Motors: initializing\n");
+	DRV8848_Init();
 
 }
 
@@ -620,8 +624,8 @@ void insertThread(tcb_t *insert) {
 }
 
 void freeTCB(tcb_t *tcb) {
-  OS_HeapFree(tcb->stack);
-  OS_HeapFree(tcb);
+  Heap_Free(tcb->stack);
+  Heap_Free(tcb);
 }
 
 void OS_Kill(void) {

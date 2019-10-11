@@ -138,6 +138,7 @@ CFLAGSgcc=-DTARGET_IS_TM4C123_RB1
 # *****************************************************************************
 # Main file
 ${BUILDPATH}/$(PROJ_NAME).axf: src/main.o
+${BUILDPATH}/$(PROJ_NAME).axf: src/teleop.o
 # Joystick
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/JOYSTICK/src/joystick.o
 # Interpreter
