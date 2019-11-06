@@ -69,6 +69,7 @@ IPATH += \
 	${ROOT}/proj/lib/INTERPRETER/inc    \
 	${ROOT}/lib/LCD/ST7735/inc     \
 	${ROOT}/lib/OS/inc             \
+	${ROOT}/lib/MAILBOX/inc             \
 	${ROOT}/proj/lib/PING/inc           \
 	${ROOT}/lib/PLL/inc            \
 	${ROOT}/lib/SD/inc             \
@@ -80,6 +81,7 @@ IPATH += \
 	${ROOT}/proj/lib/printf/inc      \
 	${ROOT}/proj/lib/ROSSERIAL/inc      \
 	${ROOT}/proj/lib/JOYSTICK/inc      \
+	${ROOT}/proj/lib/SPEED/inc      \
 	${ROOT}/proj/lib/ROSSERIAL/msgs/rosserial_msgs/TopicInfo     \
 	${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Bool      					\
 	${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Float32      				\
@@ -114,6 +116,7 @@ ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/PLL/src/PLL.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/osasm_gnu.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/OS.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/OS_Functions.o
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/MAILBOX/src/mailbox.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/LCD/ST7735/src/ST7735.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ADC/src/ADC.o
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ADC/src/ADCSWTrigger.o
@@ -139,6 +142,8 @@ CFLAGSgcc=-DTARGET_IS_TM4C123_RB1
 # Main file
 ${BUILDPATH}/$(PROJ_NAME).axf: src/main.o
 ${BUILDPATH}/$(PROJ_NAME).axf: src/teleop.o
+# Speed controller
+${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/SPEED/src/Speed.o
 # Joystick
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/JOYSTICK/src/joystick.o
 # Interpreter

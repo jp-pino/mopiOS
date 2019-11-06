@@ -3,4 +3,8 @@
 
 void Teleop_Init(void);
 
+void ROSTeleop_Disable(void);
+
+void ROSTeleop_Enable(void);
+
 #endif

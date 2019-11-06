@@ -35,7 +35,7 @@
 #include "UART1.h"
 #include "OS.h"
 
-#define NVIC_EN0_INT6            0x00000040  // Interrupt 5 enable
+#define NVIC_EN0_INT6            0x00000040  // Interrupt 6 enable
 #define UART1_FR_RXFF            0x00000040  // UART Receive FIFO Full
 #define UART1_FR_TXFF            0x00000020  // UART Transmit FIFO Full
 #define UART1_FR_RXFE            0x00000010  // UART Receive FIFO Empty
@@ -192,11 +192,11 @@ void UART1_Init(void){
   // Unlock GPIO Port F Commit Register
   GPIO_PORTC_LOCK_R = GPIO_LOCK_KEY;
   GPIO_PORTC_CR_R |= ((1 << 4) | (1 << 5) & 0xFF); // Enable commit for PC4-5
-  GPIO_PORTC_AFSEL_R |= ((1 << 4) | (1 << 5) & 0xFF);           // enable alt funct on PA1-0 -> PC4-5
-  GPIO_PORTC_DEN_R |= ((1 << 4) | (1 << 5) & 0xFF);             // enable digital I/O on PA1-0 -> PC4-5
-                                        // configure PA1-0 as UART -> PC4-5
+  GPIO_PORTC_AFSEL_R |= ((1 << 4) | (1 << 5) & 0xFF);           // enable alt funct on PC4-5
+  GPIO_PORTC_DEN_R |= ((1 << 4) | (1 << 5) & 0xFF);             // enable digital I/O on PC4-5
+                                        // configure PC4-5 as UART
   GPIO_PORTC_PCTL_R = (GPIO_PORTC_PCTL_R&0xFF00FFFF)+0x00220000;
-  GPIO_PORTC_AMSEL_R &= ~((1 << 4) | (1 << 5) & 0xFF);             // disable analog functionality on PA -> PC
+  GPIO_PORTC_AMSEL_R &= ~((1 << 4) | (1 << 5) & 0xFF);             // disable analog functionality on PC
                                         // UART0=priority 2
   NVIC_PRI1_R = (NVIC_PRI1_R & 0xFF00FFFF) | (3 << 21); // bits 13-15
   NVIC_EN0_R |= NVIC_EN0_INT6;           // enable interrupt 6 in NVIC

@@ -19,6 +19,7 @@ int main(void) {        // lab 4 real main
 	// OS_AddThread("test", &test, 512, 5);
 	Joystick_Init();
 	Teleop_Init();
+	Speed_Init();
 
   // Launch the OS
   OS_Launch(TIMESLICE); // doesn't return, interrupts enabled in here

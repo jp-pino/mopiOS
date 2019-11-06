@@ -8,6 +8,16 @@
 // Linear.x = 0 and angular.z>0 -> rotate about its own axis counter clock wise.
 // Linear.x = 0 and angular.z <0 -> rotate about its own axis clockwise.
 
+int teleop_enable = 0;
+
+void ROSTeleop_Disable(void) {
+	teleop_enable = 0;
+}
+
+void ROSTeleop_Enable(void) {
+	teleop_enable = 1;
+}
+
 void ROSTeleop(void) {
 	rospacket_t *message;
 	rostwist_t *twistmessage;
@@ -20,18 +30,28 @@ void ROSTeleop(void) {
 			twistmessage = ROS_TwistDeserialize(message);
 			if (twistmessage) {
 				// Send data to main
-				if (twistmessage->linear->x > 0 && twistmessage->angular->z == 0) {
-					DRV8848_RightInit(MOTOR_PWM_PERIOD, twistmessage->linear->x/100.0f * MOTOR_PWM_PERIOD, FORWARD);
-					DRV8848_LeftInit(MOTOR_PWM_PERIOD, twistmessage->linear->x/100.0f * MOTOR_PWM_PERIOD, FORWARD);
-				} else if (twistmessage->linear->x < 0 && twistmessage->angular->z == 0) {
-					DRV8848_RightInit(MOTOR_PWM_PERIOD, twistmessage->linear->x/100.0f * MOTOR_PWM_PERIOD, BACKWARD);
-					DRV8848_LeftInit(MOTOR_PWM_PERIOD, twistmessage->linear->x/100.0f * MOTOR_PWM_PERIOD, BACKWARD);
-				} else if (twistmessage->linear->x == 0 && twistmessage->angular->z > 0) {
-					DRV8848_RightInit(MOTOR_PWM_PERIOD, twistmessage->angular->z/100.0f * MOTOR_PWM_PERIOD, BACKWARD);
-					DRV8848_LeftInit(MOTOR_PWM_PERIOD, twistmessage->angular->z/100.0f * MOTOR_PWM_PERIOD, FORWARD);
-				} else if (twistmessage->linear->x == 0 && twistmessage->angular->z < 0) {
-					DRV8848_RightInit(MOTOR_PWM_PERIOD, twistmessage->angular->z/100.0f * MOTOR_PWM_PERIOD, FORWARD);
-					DRV8848_LeftInit(MOTOR_PWM_PERIOD, twistmessage->angular->z/100.0f * MOTOR_PWM_PERIOD, BACKWARD);
+				if (teleop_enable) {
+					if (twistmessage->linear->x > 0 && twistmessage->angular->z == 0) {
+						DRV8848_RightInit(MOTOR_PWM_PERIOD,
+							twistmessage->linear->x/100.0f * MOTOR_PWM_PERIOD, FORWARD);
+						DRV8848_LeftInit(MOTOR_PWM_PERIOD,
+							twistmessage->linear->x/100.0f * MOTOR_PWM_PERIOD, FORWARD);
+					} else if (twistmessage->linear->x < 0 && twistmessage->angular->z == 0) {
+						DRV8848_RightInit(MOTOR_PWM_PERIOD,
+							twistmessage->linear->x/100.0f * MOTOR_PWM_PERIOD, BACKWARD);
+						DRV8848_LeftInit(MOTOR_PWM_PERIOD,
+							twistmessage->linear->x/100.0f * MOTOR_PWM_PERIOD, BACKWARD);
+					} else if (twistmessage->linear->x == 0 && twistmessage->angular->z > 0) {
+						DRV8848_RightInit(MOTOR_PWM_PERIOD,
+							twistmessage->angular->z/100.0f * MOTOR_PWM_PERIOD, FORWARD);
+						DRV8848_LeftInit(MOTOR_PWM_PERIOD,
+							twistmessage->angular->z/100.0f * MOTOR_PWM_PERIOD, BACKWARD);
+					} else if (twistmessage->linear->x == 0 && twistmessage->angular->z < 0) {
+						DRV8848_RightInit(MOTOR_PWM_PERIOD,
+							twistmessage->angular->z/100.0f * MOTOR_PWM_PERIOD, BACKWARD);
+						DRV8848_LeftInit(MOTOR_PWM_PERIOD,
+							twistmessage->angular->z/100.0f * MOTOR_PWM_PERIOD, FORWARD);
+					}
 				}
 				// Deallocate data
 				ROS_TwistFree(twistmessage);
@@ -43,5 +63,5 @@ void ROSTeleop(void) {
 }
 
 void Teleop_Init(void) {
-	ROS_AddSubscriber("teleop_s", ROS_TwistMSG(), ROS_TwistMD5(), &ROSTeleop, 512, 2);
+	ROS_AddSubscriber("cmd_vel", ROS_TwistMSG(), ROS_TwistMD5(), &ROSTeleop, 512, 4);
 }

@@ -186,7 +186,7 @@ void PortF_Init(void) {
   GPIO_PORTF_AMSEL_R &= ~SW1 & ~SW2 & ~0x04 & ~0x08 & ~0x2;
   // 4) configure PF4, PF0, PF1 as GPIO
   GPIO_PORTF_PCTL_R = (GPIO_PORTF_PCTL_R & 0xFFF0FF00) + 0x00000000;
-  GPIO_PORTF_DIR_R |= SW1 | SW2; // 5) make PF4, PF0, PF1 in (built-in buttons)
+  GPIO_PORTF_DIR_R &= ~(SW1 | SW2); // 5) make PF4, PF0, PF1 in (built-in buttons)
   GPIO_PORTF_DIR_R |= 0x04 | 0x08 | 0x02;
   // 6) disable alt funct on PF4, PF0, PF1
   GPIO_PORTF_AFSEL_R &= ~SW1 & ~SW2 & ~0x04 & ~0x08 & ~0x2;
@@ -698,6 +698,13 @@ void sleep_decrement() {
 void OS_Sleep(int duration) {
   tcb_t *last;
   OS_DisableInterrupts();
+
+	if (duration <= 0) {
+    OS_EnableInterrupts();
+		return;
+	}
+
+	// Remove from tcbLists
   removeThread();
 
   // Add to sleep list
