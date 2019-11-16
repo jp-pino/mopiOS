@@ -15,7 +15,43 @@ Check out my other plugins for mopiOS:
 - [mopiOS-PIC](https://github.com/jp-pino/mopiOS-PIC): a position independent code builder for use with the mopiOS's elf loader.
 
 ## Instructions
-Follow instruction [here](proj) for building and flashing.
+Follow instructions [here](proj) for building and flashing.
+
+## Installation (from ZeeLivermorium's repo)
+### Mac OS
+#### ARM GCC Tools
+```bash
+    brew tap PX4/homebrew-px4
+    brew update
+    brew install gcc-arm-none-eabi
+```
+
+Run
+```bash
+    arm-none-eabi-gcc --version
+```
+to confirm your installation.
+
+You might run into problems when *arm-none-eabi-gcc* command is not found after installation. Try
+```bash
+    brew link gcc-arm-none-eabi
+```
+see what homebrew tells you to fix linking problem.
+
+**NOTE**: The old magic command
+```bash
+    brew cask install gcc-arm-embedded
+```
+does not work anymore. They removed it from cask. Put it here in case you are wondering or you are trying to use [UT-Rasware](https://github.com/ut-ras/Rasware) installation guide.
+
+#### Lm4tools
+```bash
+    brew install lm4tools
+```
+#### OpenOCD
+```bash
+    brew install open-ocd
+```
 
 ## Acknowledgments
 [Cole Morgan](https://github.com/coleamorgan) is the co-creator of mopiOS. This project would not have been possible without him.  
