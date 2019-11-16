@@ -4,6 +4,7 @@
 void MailBox_Float_Init(float_mailbox_t *mailbox) {
   OS_InitSemaphore("mf", &(mailbox->free), 1);
   OS_InitSemaphore("mv", &(mailbox->valid), 0);
+	mailbox->data = 0;
 }
 
 void MailBox_Float_Send(float_mailbox_t *mailbox, float data) {

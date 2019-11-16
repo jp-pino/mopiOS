@@ -5,9 +5,9 @@
 
 // Float Mailbox
 typedef struct float_mailbox_t {
+	float data;
 	sema_t free;
 	sema_t valid;
-	float data;
 } float_mailbox_t;
 
 void MailBox_Float_Init(float_mailbox_t *mailbox);

@@ -5,20 +5,24 @@
 #define SPEED_PID_PERIOD 100
 
 
-#define SPEED_N 64.0f
-#define SPEED_PI 3.14159265f
-#define SPEED_GEAR_RELATION ((float)1.0f/70.0f)
-#define SPEED_WHEEL_RADIUS 0.065f
+#define SPEED_N 							64.0f
+#define SPEED_PI 							3.14159265f
+#define SPEED_GEAR_RELATION 	(1.0f/70.0f)
+#define SPEED_WHEEL_RADIUS 		0.06f
+#define SPEED_WHEEL_DISTANCE	42.0f
 
-enum {
-	SPEED_MOTOR_LEFT = 0,
-	SPEED_MOTOR_RIGHT = 1
-};
+// PID Constants
+#define K_P 15.0f
+#define K_I 10.0f
+#define K_D 1.0f
+
+#define SPEED_MOTOR_LEFT 	0
+#define SPEED_MOTOR_RIGHT 1
 
 typedef struct motor_ctrl_data_t {
-  float integral;
-	float speed;
-	float speed_p;
+	float speed;				// Reference
+	float speed_p;			// Previous speed (for differential)
+  float integral;			// Integral error
 } motor_ctrl_data_t;
 
 void Speed_Init(void);

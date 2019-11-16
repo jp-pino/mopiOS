@@ -17,8 +17,8 @@ int main(void) {        // lab 4 real main
   OS_Init();           // initialize, disable interrupts
 
 	// OS_AddThread("test", &test, 512, 5);
-	Joystick_Init();
-	Teleop_Init();
+	// Joystick_Init();
+	// Teleop_Init();
 	Speed_Init();
 
   // Launch the OS

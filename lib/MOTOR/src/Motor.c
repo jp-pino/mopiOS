@@ -75,11 +75,6 @@
 sema_t motor_l_taken;
 sema_t motor_r_taken;
 
-void DRV8848_Init(void) {
-	OS_InitSemaphore("drv8848_l", &motor_l_taken, 1);
-	OS_InitSemaphore("drv8848_l", &motor_r_taken, 1);
-}
-
 // period is 16-bit number of PWM clock cycles in one period (3<=period)
 // duty is number of PWM clock cycles output is high  (2<=duty<=period-1)
 // PWM clock rate = processor clock rate/SYSCTL_RCC_PWMDIV
@@ -281,7 +276,7 @@ void Left_InitB(uint16_t period, uint16_t duty, int direction){
 // duty is number of PWM clock cycles output is high  (2<=duty<=period-1)
 void Left_DutyB(uint16_t duty, int direction){
   PWM0_1_CMPB_R = duty - 1;    // 6) count value when output rises
-    if(direction){
+  if(direction){
     PB4 = 0x10;
   }else{
     PB4 = 0;
@@ -318,6 +313,11 @@ void DRV8848_RightStop(void){
 // Motor board version 6 with DRV8848 dual H-bridge
 void DRV8848_RightInit(uint16_t period, uint16_t duty, enum Direction direction){
 	OS_bWait(&motor_r_taken);
+	if (LeftDirection == direction && LeftPeriod == period) {
+		// DRV8848_LeftDuty(duty);
+		// OS_bSignal(&motor_r_taken);
+		// return;
+	}
   RightDirection = direction;
   RightPeriod = period;
   if(direction == COAST){
@@ -362,6 +362,11 @@ void DRV8848_RightDuty(uint16_t duty){
 // Motor board version 6 with DRV8848 dual H-bridge
 void DRV8848_LeftInit(uint16_t period, uint16_t duty, enum Direction direction){
 	OS_bWait(&motor_l_taken);
+	if (LeftDirection == direction && LeftPeriod == period) {
+		// DRV8848_LeftDuty(duty);
+		// OS_bSignal(&motor_l_taken);
+		// return;
+	}
   LeftDirection = direction;
   LeftPeriod = period;
   if(direction == COAST){
@@ -405,4 +410,12 @@ void DRV8848_LeftDuty(uint16_t duty){
   }else{
     Left_Duty(LeftPeriod-duty, 1);  // PB4 is negative logic duty, PB5 is 1
   }
+ }
+
+
+ void DRV8848_Init(void) {
+ 	OS_InitSemaphore("drv8848_l", &motor_l_taken, 1);
+ 	OS_InitSemaphore("drv8848_l", &motor_r_taken, 1);
+ 	DRV8848_RightInit(MOTOR_PWM_PERIOD, 0, COAST);
+ 	DRV8848_LeftInit(MOTOR_PWM_PERIOD, 0, COAST);
  }

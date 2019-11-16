@@ -27,6 +27,12 @@
 #define PE2  (*((volatile unsigned long *)0x40024010))
 #define PE3  (*((volatile unsigned long *)0x40024020))
 
+#define PF0 (*((volatile uint32_t *)0x40025004))
+#define PF1 (*((volatile uint32_t *)0x40025008))
+#define PF2 (*((volatile uint32_t *)0x40025010))
+#define PF3 (*((volatile uint32_t *)0x40025020))
+#define PF4 (*((volatile uint32_t *)0x40025040))
+
 #define TPE0() PE0 ^= 0x01
 #define TPE1() PE1 ^= 0x02
 #define TPE2() PE2 ^= 0x04

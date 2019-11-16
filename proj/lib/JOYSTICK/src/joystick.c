@@ -19,6 +19,7 @@
 #include "Motor.h"
 #include "ST7735.h"
 #include "teleop.h"
+#include "Speed.h"
 
 #define NVIC_EN0_INT2			          0x00000004  // Interrupt 2 enable
 
@@ -128,74 +129,11 @@ void Joystick_Main(void) {
 		nJoyX = temp[0] - JOYSTICK_MIN;
 		nJoyY = temp[1] - JOYSTICK_MIN;
 
-		// Calculate Drive Turn output due to Joystick X input
-		if (nJoyY >= 0) {
-		  // Forward
-		  nMotPremixL = (nJoyX>=0)? JOYSTICK_MAX : (JOYSTICK_MAX + nJoyX);
-		  nMotPremixR = (nJoyX>=0)? (JOYSTICK_MAX - nJoyX) : JOYSTICK_MAX;
-		} else {
-		  // Reverse
-		  nMotPremixL = (nJoyX>=0)? (JOYSTICK_MAX - nJoyX) : JOYSTICK_MAX;
-		  nMotPremixR = (nJoyX>=0)? JOYSTICK_MAX : (JOYSTICK_MAX + nJoyX);
-		}
 
-		// Scale Drive output due to Joystick Y input (throttle)
-		nMotPremixL = nMotPremixL * nJoyY/JOYSTICK_MIN;
-		nMotPremixR = nMotPremixR * nJoyY/JOYSTICK_MIN;
+		Motor_SetSpeed(SPEED_MOTOR_LEFT, nJoyY - nJoyX * SPEED_WHEEL_DISTANCE / 2.0f);
+		Motor_SetSpeed(SPEED_MOTOR_RIGHT, nJoyX * SPEED_WHEEL_DISTANCE / 2.0f - nJoyY);
 
-		// Now calculate pivot amount
-		// - Strength of pivot (nPivSpeed) based on Joystick X input
-		// - Blending of pivot vs drive (fPivScale) based on Joystick Y input
-		nPivSpeed = nJoyX;
-		fPivScale = (abs(nJoyY)>fPivYLimit)? 0.0f : (1.0f - abs(nJoyY)/fPivYLimit);
-
-		// Calculate final mix of Drive and Pivot
-		nMotMixL = (1.0f-fPivScale)*nMotPremixL + fPivScale*( nPivSpeed);
-		nMotMixR = (1.0f-fPivScale)*nMotPremixR + fPivScale*(-nPivSpeed);
-
-		left = -nMotMixL*2.0f/4095.0f * MOTOR_PWM_PERIOD;
-		right = nMotMixR*2.0f/4095.0f * MOTOR_PWM_PERIOD;
-
-		// Convert to Motor PWM range
-		if (joystick_enable) {
-			if (right >= 20) {
-				DRV8848_LeftInit(MOTOR_PWM_PERIOD, right, FORWARD);
-			} else if (right <= -20) {
-				DRV8848_LeftInit(MOTOR_PWM_PERIOD, -right, BACKWARD);
-			} else {
-				DRV8848_LeftInit(MOTOR_PWM_PERIOD, 2, COAST);
-			}
-
-			if (left >= 20) {
-				DRV8848_RightInit(MOTOR_PWM_PERIOD, left, FORWARD);
-			} else if (left <= -20) {
-				DRV8848_RightInit(MOTOR_PWM_PERIOD, -left, BACKWARD);
-			} else {
-				DRV8848_RightInit(MOTOR_PWM_PERIOD, 2, COAST);
-			}
-		}
 		OS_Sleep(150);
-	}
-}
-
-void Joystick_Print(void) {
-	while(1) {
-		if (left >= 20) {
-			ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L:  ", left);
-		} else if (left <= -20) {
-			ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L: -", -left);
-		} else {
-			ST7735_Message(ST7735_DISPLAY_TOP, 0, "MOTOR L:  ", 0);
-		}
-
-		if (right >= 20) {
-			ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R:  ", right);
-		} else if (right <= -20) {
-			ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R: -", -right);
-		} else {
-			ST7735_Message(ST7735_DISPLAY_TOP, 1, "MOTOR R:  ", 0);
-		}
-		OS_Sleep(300);
 	}
 }
 
@@ -233,7 +171,6 @@ void Joystick_Init(void) {
 	// Initialize semaphore
   OS_InitSemaphore("joy_ready", &sw_ready, 1);
 
-
+	// Launch Joystick Thread
 	OS_AddThread("joystick", &Joystick_Main, 256, 3);
-	OS_AddThread("joy_print", &Joystick_Print, 256, 5);
 }

@@ -59,7 +59,7 @@
 #include "OS.h"
 
 // In units of .1ms
-#define MOTOR_TAU	1
+#define MOTOR_TAU	20
 
 // In units of 800ns
 #define MOTOR_PWM_PERIOD (MOTOR_TAU*TIME_1MS*12.5/(800))

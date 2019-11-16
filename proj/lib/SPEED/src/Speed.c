@@ -7,10 +7,12 @@
 
 // Speed and reference structs
 motor_ctrl_data_t motor_ctrl_data[2];
-volatile int sign[] = {0, 0};
+volatile int sign[2] = {1, 1};
+
+volatile float speeds[2];
 
 // Mailboxes
-float_mailbox_t motor_speed[2];
+float_mailbox_t motor_speed_l, motor_speed_r;
 
 // Interrupt handler for GPIO Port D (PD1, PD3)
 void GPIOPortD_Handler(void) {
@@ -18,23 +20,32 @@ void GPIOPortD_Handler(void) {
   if ((GPIO_PORTD_RIS_R & 0x02) == 0x02) {
     GPIO_PORTD_ICR_R |= 0x02;
     GPIO_PORTD_IM_R &= ~0x02;
-    if ((GPIO_PORTD_DATA_R & 0x01) == 0x01) {
-			sign[SPEED_MOTOR_RIGHT] = 1;
-		} else {
-			sign[SPEED_MOTOR_RIGHT] = -1;
+		if ((GPIO_PORTD_DATA_R & 0x02) == 0x02) {
+			if ((GPIO_PORTD_DATA_R & 0x01) == 0x01) {
+				sign[SPEED_MOTOR_RIGHT] = -1;
+				PF1 |= 0x02;
+			} else {
+				sign[SPEED_MOTOR_RIGHT] = 1;
+				PF1 &= ~0x02;
+			}
+			GPIO_PORTD_IM_R |= 0x02;
 		}
-		GPIO_PORTD_IM_R |= 0x02;
   }
+
 	// Check for PD3
   if ((GPIO_PORTD_RIS_R & 0x08) == 0x08) {
     GPIO_PORTD_ICR_R |= 0x08;
     GPIO_PORTD_IM_R &= ~0x08;
-    if ((GPIO_PORTD_DATA_R & 0x04) == 0x04) {
-			sign[SPEED_MOTOR_LEFT] = -1;
-		} else {
-			sign[SPEED_MOTOR_LEFT] = 1;
+		if ((GPIO_PORTD_DATA_R & 0x08) == 0x08) {
+			if ((GPIO_PORTD_DATA_R & 0x04) == 0x04) {
+				sign[SPEED_MOTOR_LEFT] = 1;
+				PF2 &= ~0x04;
+			} else {
+				sign[SPEED_MOTOR_LEFT] = -1;
+				PF2 |= 0x4;
+			}
+			GPIO_PORTD_IM_R |= 0x08;
 		}
-		GPIO_PORTD_IM_R |= 0x08;
   }
 }
 
@@ -45,6 +56,7 @@ void Motor_SetSpeed(int motor_id, float speed) {
 
 void motor_r_speed(void) {
 	long start;
+	static long last = 0;
 	float speed;
 	while(1) {
 		start = OS_Time();
@@ -53,13 +65,21 @@ void motor_r_speed(void) {
 		WTIMER2_CTL_R &= ~TIMER_CTL_TAEN;
 
 		// Calculate speed
-		speed = SPEED_WHEEL_RADIUS * SPEED_GEAR_RELATION * 2.0f * SPEED_PI * (float)WTIMER2_TAR_R / ((SPEED_N/1000.0f) * SPEED_PID_PERIOD);
+		speed = (2.0f * SPEED_PI * ((float)WTIMER2_TAR_R)) / (SPEED_N * ((float)(OS_Time() - last)/1000.0f));
+		// speed = (2.0f * SPEED_PI * ((float)WTIMER2_TAR_R)) / (SPEED_N * ((float)(SPEED_PID_PERIOD)/1000.0f));
+		speed = SPEED_GEAR_RELATION * speed;
+		// Tangential
+		speed = SPEED_WHEEL_RADIUS * speed * 4.0f;
+		// Sign
+		speed = speed * ((float)sign[SPEED_MOTOR_RIGHT]);
 
 		// Send speed data to PID
-		MailBox_Float_Send(&motor_speed[SPEED_MOTOR_RIGHT], speed * sign[SPEED_MOTOR_RIGHT]);
+		MailBox_Float_Send(&motor_speed_r, speed);
+		// speeds[SPEED_MOTOR_RIGHT] = speed;
 
 		// Reset timers
 		WTIMER2_TAV_R = 0;
+		last = OS_Time();
 		WTIMER2_CTL_R |= TIMER_CTL_TAEN;
 
 		// Sleep for required time
@@ -78,10 +98,17 @@ void motor_l_speed(void) {
 		WTIMER3_CTL_R &= ~TIMER_CTL_TAEN;
 
 		// Calculate speed
-		speed = SPEED_WHEEL_RADIUS * SPEED_GEAR_RELATION * 2.0f * SPEED_PI * (float)WTIMER3_TAR_R / ((SPEED_N/1000.0f) * (OS_Time() - last));
+		// Angular
+		speed = (2.0f * SPEED_PI * ((float)WTIMER3_TAR_R)) / (SPEED_N * ((float)(OS_Time() - last)/1000.0f));
+		speed = SPEED_GEAR_RELATION * speed;
+		// Tangential
+		speed = SPEED_WHEEL_RADIUS * speed * 4.0f;
+		// Sign
+		speed = speed * ((float)sign[SPEED_MOTOR_LEFT]);
 
 		// Send speed data to PID
-		MailBox_Float_Send(&motor_speed[SPEED_MOTOR_LEFT], speed * sign[SPEED_MOTOR_LEFT]);
+		MailBox_Float_Send(&motor_speed_l, speed);
+		// speeds[SPEED_MOTOR_LEFT] = speed;
 
 		// Reset timers
 		WTIMER3_TAV_R = 0;
@@ -93,77 +120,147 @@ void motor_l_speed(void) {
 	}
 }
 
-// void motor_r_speed(void) {
-// 	long start;
-// 	ST7735_Message(ST7735_DISPLAY_BOTTOM, 7, "Test:", 1.3);
-// 	while(1) {
-// 		start = OS_Time();
-//
-// 		// Send speed data to PID
-// 		while(WTIMER2_TAR_R == WTIMER2_TBR_R);
-//
-// 		// mailbox_l_send();
-// 		// ST7735_Message(ST7735_DISPLAY_BOTTOM, 3, "Motor RA:", (float)(6.5f * SPEED_GEAR_RELATION * 2.0f * SPEED_PI * (float)WTIMER2_TAR_R / ((float)(SPEED_N/1000.0f) * SPEED_PID_PERIOD)));
-// 		// WTIMER2_TAV_R = 0;
-// 		// ST7735_Message(ST7735_DISPLAY_BOTTOM, 4, "Motor RB:", (float)(6.5f * SPEED_GEAR_RELATION * 2.0f * SPEED_PI * (float)WTIMER2_TBR_R / ((float)(SPEED_N/1000.0f) * SPEED_PID_PERIOD)));
-// 		// WTIMER2_TBV_R = 0;
-//
-// 		// Sleep for required time
-// 		OS_Sleep(SPEED_PID_PERIOD - (OS_Time() - start));
-// 	}
-// }
+void motor_r_pid(void) {
+	long start;
+	float speed_r, speed_c, speed_p, error;
+	float pwm;
 
-// void motor_r_pid(void) {
-// 	long start;
-// 	int error;
-//
-// 	// Initialize variables
-// 	while(1) {
-// 		// Store start time
-// 		start = OS_Time();
-// 		// Read Current Speed
-// 		speed_c = 6.5f * SPEED_GEAR_RELATION * 2.0f * SPEED_PI * (float)WTIMER2_TAR_R / ((float)(SPEED_N/1000.0f) * SPEED_PID_PERIOD);
-// 		// Read User Speed (Reference)
-// 		speed_r = mailbox_r_recv();
-// 		// Calculate Error
-// 		error = speed_r - speed_c;
-//
-//
-// 		// Calculate PID
-// 		// Proportional
-// 		pwm = speed_c * K_P_RIGHT;
-// 		// Check if it maxed out
-// 		if (pwm > MOTOR_PWM_PERIOD) {
-// 			pwm = MOTOR_PWM_PERIOD;
-// 		} else if (pwm < -MOTOR_PWM_PERIOD) {
-// 			pwm = -MOTOR_PWM_PERIOD
-// 		}
-//
-// 		// Integral
-// 		error_integral += (speed_c - speed_p) * SPEED_PID_PERIOD;
-// 		pwm += error_integral * K_I_RIGHT;
-//
-// 		// Derivative
-// 		pwm +=
-//
-//
-//
-// 		// Set new motor speed
-// 		if (pwm > 2) {
-// 			DRV8848_RightInit(MOTOR_PWM_PERIOD, pwm, FORWARD);
-// 		} else if (pwm < -2) {
-// 			DRV8848_RightInit(MOTOR_PWM_PERIOD, -pwm, BACKWARD);
-// 		} else {
-// 			DRV8848_RightInit(MOTOR_PWM_PERIOD, 0, COAST);
-// 		}
-//
-// 		// Store new previous speed
-// 		speed_p = speed_c;
-//
-// 		// Sleep for required time
-// 		OS_Sleep(SPEED_PID_PERIOD - (OS_Time() - start));
-// 	}
-// }
+	// Initialize variables
+	motor_ctrl_data[SPEED_MOTOR_RIGHT].speed = 0.0f;
+	motor_ctrl_data[SPEED_MOTOR_RIGHT].speed_p = 0;
+	motor_ctrl_data[SPEED_MOTOR_RIGHT].integral = 0;
+	while(1) {
+		// Store start time
+		start = OS_Time();
+
+
+		// Read Current Speed
+		speed_c = MailBox_Float_Recv(&motor_speed_r);
+		// speed_c = speeds[SPEED_MOTOR_RIGHT];
+		// Read previous speed
+		speed_p = motor_ctrl_data[SPEED_MOTOR_RIGHT].speed_p;
+		// Read Reference Speed
+		speed_r = motor_ctrl_data[SPEED_MOTOR_RIGHT].speed;
+
+
+		// Calculate Error
+		error = speed_r - speed_c;
+
+
+		// Calculate PID
+
+		// Proportional
+		pwm = error * K_P;
+
+		// Integral
+		motor_ctrl_data[SPEED_MOTOR_RIGHT].integral += error * SPEED_PID_PERIOD;
+		if (motor_ctrl_data[SPEED_MOTOR_RIGHT].integral > MOTOR_PWM_PERIOD) {
+			motor_ctrl_data[SPEED_MOTOR_RIGHT].integral = MOTOR_PWM_PERIOD;
+		} else if (motor_ctrl_data[SPEED_MOTOR_RIGHT].integral < -MOTOR_PWM_PERIOD) {
+			motor_ctrl_data[SPEED_MOTOR_RIGHT].integral = -MOTOR_PWM_PERIOD;
+		}
+		pwm += motor_ctrl_data[SPEED_MOTOR_RIGHT].integral * K_I;
+
+		// Derivative
+		pwm += K_D * (speed_c - speed_p) / (float)(SPEED_PID_PERIOD);
+
+
+
+		// Check if it maxed out
+		if (pwm > MOTOR_PWM_PERIOD) {
+			pwm = MOTOR_PWM_PERIOD;
+		} else if (pwm < -MOTOR_PWM_PERIOD) {
+			pwm = -MOTOR_PWM_PERIOD;
+		}
+
+		// Set new motor speed
+		// DRV8848_RightDuty((long)pwm);
+		if (pwm > 0) {
+	 		DRV8848_RightInit(MOTOR_PWM_PERIOD, pwm, FORWARD);
+		} else if (pwm < 0) {
+	 		DRV8848_RightInit(MOTOR_PWM_PERIOD, -pwm, BACKWARD);
+		} else {
+	 		DRV8848_RightInit(MOTOR_PWM_PERIOD, 0, COAST);
+		}
+
+		// Store new previous speed
+		motor_ctrl_data[SPEED_MOTOR_RIGHT].speed_p = speed_c;
+
+		// Sleep for required time
+		// OS_Sleep(SPEED_PID_PERIOD - (OS_Time() - start));
+	}
+}
+
+void motor_l_pid(void) {
+	long start;
+	float speed_r, speed_c, speed_p, error;
+	float pwm;
+
+	// Initialize variables
+	motor_ctrl_data[SPEED_MOTOR_LEFT].speed = 0.0f;
+	motor_ctrl_data[SPEED_MOTOR_LEFT].speed_p = 0;
+	motor_ctrl_data[SPEED_MOTOR_LEFT].integral = 0;
+	while(1) {
+		// Store start time
+		start = OS_Time();
+
+
+		// Read Current Speed
+		speed_c = MailBox_Float_Recv(&motor_speed_l);
+		// speed_c = speeds[SPEED_MOTOR_LEFT];
+		// Read previous speed
+		speed_p = motor_ctrl_data[SPEED_MOTOR_LEFT].speed_p;
+		// Read Reference Speed
+		speed_r = motor_ctrl_data[SPEED_MOTOR_LEFT].speed;
+
+
+		// Calculate Error
+		error = speed_r - speed_c;
+
+
+		// Calculate PID
+
+		// Proportional
+		pwm = error * K_P;
+
+		// Integral
+		motor_ctrl_data[SPEED_MOTOR_LEFT].integral += error * SPEED_PID_PERIOD;
+		if (motor_ctrl_data[SPEED_MOTOR_LEFT].integral > MOTOR_PWM_PERIOD) {
+			motor_ctrl_data[SPEED_MOTOR_LEFT].integral = MOTOR_PWM_PERIOD;
+		} else if (motor_ctrl_data[SPEED_MOTOR_LEFT].integral < -MOTOR_PWM_PERIOD) {
+			motor_ctrl_data[SPEED_MOTOR_LEFT].integral = -MOTOR_PWM_PERIOD;
+		}
+		pwm += motor_ctrl_data[SPEED_MOTOR_LEFT].integral * K_I;
+
+		// Derivative
+		pwm += K_D * (speed_c - speed_p) / (float)(SPEED_PID_PERIOD);
+
+
+
+		// Check if it maxed out
+		if (pwm > MOTOR_PWM_PERIOD) {
+			pwm = MOTOR_PWM_PERIOD;
+		} else if (pwm < -MOTOR_PWM_PERIOD) {
+			pwm = -MOTOR_PWM_PERIOD;
+		}
+
+		// Set new motor speed
+		// DRV8848_RightDuty((long)pwm);
+		if (pwm > 0) {
+			DRV8848_LeftInit(MOTOR_PWM_PERIOD, pwm, FORWARD);
+		} else if (pwm < 0) {
+			DRV8848_LeftInit(MOTOR_PWM_PERIOD, -pwm, BACKWARD);
+		} else {
+			DRV8848_LeftInit(MOTOR_PWM_PERIOD, 0, COAST);
+		}
+
+		// Store new previous speed
+		motor_ctrl_data[SPEED_MOTOR_LEFT].speed_p = speed_c;
+
+		// Sleep for required time
+		// OS_Sleep(SPEED_PID_PERIOD - (OS_Time() - start));
+	}
+}
 
 // WT2CCP0 -> PD0 -> ENC1A
 // WT2CCP1 -> PD1 -> ENC1B
@@ -171,9 +268,41 @@ void motor_l_speed(void) {
 // WT3CCP1 -> PD3 -> ENC2B
 
 void motors_print(void) {
+	static int i = 0;
 	while(1) {
-		ST7735_Message(ST7735_DISPLAY_BOTTOM, 0, "Motor L:", MailBox_Float_Recv(&motor_speed[SPEED_MOTOR_LEFT])*100);
-		ST7735_Message(ST7735_DISPLAY_BOTTOM, 1, "Motor R:", MailBox_Float_Recv(&motor_speed[SPEED_MOTOR_RIGHT])*100);
+		ST7735_Message(ST7735_DISPLAY_TOP, 1, "Motor R:", motor_ctrl_data[1].speed_p * 100);
+		ST7735_Message(ST7735_DISPLAY_TOP, 2, "PWM R:", motor_ctrl_data[1].speed_p * K_P * 100);
+		ST7735_Message(ST7735_DISPLAY_TOP, 3, "Error:", (motor_ctrl_data[1].speed_p - motor_ctrl_data[1].speed) * 100);
+		ST7735_Message(ST7735_DISPLAY_TOP, 4, "Reference:", motor_ctrl_data[1].speed * 100);
+		ST7735_Message(ST7735_DISPLAY_TOP, 5, "Motor wL:", motor_ctrl_data[1].speed_p / SPEED_WHEEL_RADIUS * 30.0f / SPEED_PI);
+
+		ST7735_Message(ST7735_DISPLAY_BOTTOM, 1, "Motor L:", motor_ctrl_data[0].speed_p * 100);
+		ST7735_Message(ST7735_DISPLAY_BOTTOM, 2, "PWM L:", motor_ctrl_data[0].speed_p * K_P * 100);
+		ST7735_Message(ST7735_DISPLAY_BOTTOM, 3, "Error:", (motor_ctrl_data[0].speed_p - motor_ctrl_data[0].speed) * 100);
+		ST7735_Message(ST7735_DISPLAY_BOTTOM, 4, "Reference:", motor_ctrl_data[0].speed * 100);
+		ST7735_Message(ST7735_DISPLAY_BOTTOM, 5, "Motor wL:", motor_ctrl_data[0].speed_p / SPEED_WHEEL_RADIUS * 30.0f / SPEED_PI);
+		ST7735_Message(ST7735_DISPLAY_BOTTOM, 6, "I:", i++);
+		OS_Sleep(1000);
+	}
+}
+
+void motors_test(void) {
+	while(1) {
+		Motor_SetSpeed(SPEED_MOTOR_LEFT, -0.2f);
+		Motor_SetSpeed(SPEED_MOTOR_RIGHT, 0.2f);
+		OS_Sleep(5000);
+		Motor_SetSpeed(SPEED_MOTOR_LEFT, -0.1f);
+		Motor_SetSpeed(SPEED_MOTOR_RIGHT, 0.1f);
+		OS_Sleep(5000);
+		Motor_SetSpeed(SPEED_MOTOR_LEFT, 0.0f);
+		Motor_SetSpeed(SPEED_MOTOR_RIGHT, 0.0f);
+		OS_Sleep(5000);
+		Motor_SetSpeed(SPEED_MOTOR_LEFT, 0.1f);
+		Motor_SetSpeed(SPEED_MOTOR_RIGHT, -0.1f);
+		OS_Sleep(5000);
+		Motor_SetSpeed(SPEED_MOTOR_LEFT, 0.2f);
+		Motor_SetSpeed(SPEED_MOTOR_RIGHT, -0.2f);
+		OS_Sleep(5000);
 	}
 }
 
@@ -193,7 +322,7 @@ void Speed_Init(void) {
 	GPIO_PORTD_AMSEL_R &= ~0x0F;
 	// Configure PD0, PD2 as WTCCP
 	GPIO_PORTD_PCTL_R = (GPIO_PORTD_PCTL_R & 0xFFFF0000) + 0x00000707;
-	// Make PD0-3 in (built-in buttons)
+	// Make PD0-3 in
 	GPIO_PORTD_DIR_R &= ~0x0F;
 	// Enable alt funct on PD0, PD2
 	GPIO_PORTD_AFSEL_R |= 0x05;
@@ -202,8 +331,9 @@ void Speed_Init(void) {
 	GPIO_PORTD_DEN_R |= 0x0F;
 	// Enable interrupts on PD1, PD3
 	GPIO_PORTD_IM_R |= 0x0A;
-	// Set interrupt priority to 7
-  NVIC_PRI0_R = (NVIC_PRI0_R & 0x00FFFFFF) | (7 << 29);
+	GPIO_PORTD_IEV_R |= 0x0A;
+	// Set interrupt priority to 3
+  NVIC_PRI0_R = (NVIC_PRI0_R & 0x00FFFFFF) | (3 << 29);
   NVIC_EN0_R |= 1 << 3;
 	// Lock GPIO Port D
 	GPIO_PORTD_LOCK_R = 0x00;
@@ -260,13 +390,15 @@ void Speed_Init(void) {
 
 
 	// Initialize Mailboxes
-	MailBox_Float_Init(&motor_speed[0]);
-	MailBox_Float_Init(&motor_speed[1]);
+	MailBox_Float_Init(&motor_speed_l);
+	MailBox_Float_Init(&motor_speed_r);
 
 	// Add Threads
-	OS_AddThread("m_l_speed", &motor_l_speed, 128, 3);
-	OS_AddThread("m_r_speed", &motor_r_speed, 128, 3);
-	OS_AddThread("m_r_speed", &motors_print, 128, 5);
-	// OS_AddThread("motor_l_pid", &motor_l_pid, 128, 3);
-	// OS_AddThread("motor_r_pid", &motor_r_pid, 128, 3);
+	OS_AddThread("m_l_speed", &motor_l_speed, 256, 3);
+	OS_AddThread("m_r_speed", &motor_r_speed, 256, 3);
+	OS_AddThread("motor_l_pid", &motor_l_pid, 256, 3);
+	OS_AddThread("motor_r_pid", &motor_r_pid, 256, 3);
+
+	OS_AddThread("m_r_print", &motors_print, 256, 5);
+	OS_AddThread("m_test", &motors_test, 128, 5);
 }

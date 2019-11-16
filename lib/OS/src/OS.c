@@ -48,11 +48,6 @@ static FATFS OSfatFS;
 /* Constants definitions */
 
 #define GPIO_LOCK_KEY 0x4C4F434B // Unlocks the GPIO_CR register
-#define PF4 (*((volatile uint32_t *)0x40025040))
-#define PF0 (*((volatile uint32_t *)0x40025004))
-#define PF1 (*((volatile uint32_t *)0x40025008))
-#define PF2 (*((volatile uint32_t *)0x40025010))
-#define PF3 (*((volatile uint32_t *)0x40025020))
 #define SW1 0x10 // on the left side of the Launchpad board
 #define SW2 0x01 // on the right side of the Launchpad board
 #define NVIC_INT_CTRL_R (*((volatile uint32_t *)0xE000ED04))
@@ -235,10 +230,10 @@ void OS_EndCritical(long sr) {
 void OS_Idle(void) {
   while (1) {
 		// Debug
-		PF1 &= 0x0;
-		PF2 |= 0x4;
-		PF2 &= 0x0;
-		PF1 |= 0x2;
+		// PF1 &= 0x0;
+		// PF2 |= 0x4;
+		// PF2 &= 0x0;
+		// PF1 |= 0x2;
   }
 }
 
@@ -846,7 +841,7 @@ void OS_ClearIntDisTimes(void) {
 void measureIntDis(void) {
   long timeEn = 0;
   interruptsEnabled = 0;
-  firstTimeID = OS_Time(); // Units of 12.5ns
+  firstTimeID = OS_Time();
   if (firstTimeIE < firstTimeID)
     timeEn = firstTimeID - firstTimeIE;
   else
