@@ -35,6 +35,8 @@
 #include "UART5.h"
 #include "OS.h"
 
+#if UART5_Enabled == 1
+
 #define NVIC_EN1_INT61           0x20000000  // Interrupt 5 enable
 #define UART5_FR_RXFF            0x00000040  // UART Receive FIFO Full
 #define UART5_FR_TXFF            0x00000020  // UART Transmit FIFO Full
@@ -786,3 +788,5 @@ void UART5_InResponse(char *bufPt, uint16_t max) {
 
   *bufPt = 0;
 }
+
+#endif

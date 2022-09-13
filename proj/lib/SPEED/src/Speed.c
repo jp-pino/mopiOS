@@ -28,8 +28,8 @@ void GPIOPortD_Handler(void) {
 				sign[SPEED_MOTOR_RIGHT] = 1;
 				PF1 &= ~0x02;
 			}
-			GPIO_PORTD_IM_R |= 0x02;
 		}
+		GPIO_PORTD_IM_R |= 0x02;
   }
 
 	// Check for PD3
@@ -39,19 +39,22 @@ void GPIOPortD_Handler(void) {
 		if ((GPIO_PORTD_DATA_R & 0x08) == 0x08) {
 			if ((GPIO_PORTD_DATA_R & 0x04) == 0x04) {
 				sign[SPEED_MOTOR_LEFT] = 1;
-				PF2 &= ~0x04;
+				PF2 &= ~0x4;
 			} else {
 				sign[SPEED_MOTOR_LEFT] = -1;
 				PF2 |= 0x4;
 			}
-			GPIO_PORTD_IM_R |= 0x08;
 		}
+		GPIO_PORTD_IM_R |= 0x08;
   }
 }
 
 // Configure speed
 void Motor_SetSpeed(int motor_id, float speed) {
-	motor_ctrl_data[motor_id].speed = speed;
+	if (speed != motor_ctrl_data[motor_id].speed) {
+		motor_ctrl_data[motor_id].speed = speed;
+		motor_ctrl_data[motor_id].integral = 0;
+	}
 }
 
 void motor_r_speed(void) {
@@ -125,6 +128,8 @@ void motor_r_pid(void) {
 	float speed_r, speed_c, speed_p, error;
 	float pwm;
 
+	static long last = 0;
+
 	// Initialize variables
 	motor_ctrl_data[SPEED_MOTOR_RIGHT].speed = 0.0f;
 	motor_ctrl_data[SPEED_MOTOR_RIGHT].speed_p = 0;
@@ -153,7 +158,8 @@ void motor_r_pid(void) {
 		pwm = error * K_P;
 
 		// Integral
-		motor_ctrl_data[SPEED_MOTOR_RIGHT].integral += error * SPEED_PID_PERIOD;
+		motor_ctrl_data[SPEED_MOTOR_RIGHT].integral += error * (SPEED_PID_PERIOD);
+		// Limit Integral Error
 		if (motor_ctrl_data[SPEED_MOTOR_RIGHT].integral > MOTOR_PWM_PERIOD) {
 			motor_ctrl_data[SPEED_MOTOR_RIGHT].integral = MOTOR_PWM_PERIOD;
 		} else if (motor_ctrl_data[SPEED_MOTOR_RIGHT].integral < -MOTOR_PWM_PERIOD) {
@@ -173,6 +179,7 @@ void motor_r_pid(void) {
 			pwm = -MOTOR_PWM_PERIOD;
 		}
 
+
 		// Set new motor speed
 		// DRV8848_RightDuty((long)pwm);
 		if (pwm > 0) {
@@ -185,6 +192,7 @@ void motor_r_pid(void) {
 
 		// Store new previous speed
 		motor_ctrl_data[SPEED_MOTOR_RIGHT].speed_p = speed_c;
+		last = OS_Time();
 
 		// Sleep for required time
 		// OS_Sleep(SPEED_PID_PERIOD - (OS_Time() - start));
@@ -195,6 +203,8 @@ void motor_l_pid(void) {
 	long start;
 	float speed_r, speed_c, speed_p, error;
 	float pwm;
+
+	static long last = 0;
 
 	// Initialize variables
 	motor_ctrl_data[SPEED_MOTOR_LEFT].speed = 0.0f;
@@ -224,7 +234,9 @@ void motor_l_pid(void) {
 		pwm = error * K_P;
 
 		// Integral
-		motor_ctrl_data[SPEED_MOTOR_LEFT].integral += error * SPEED_PID_PERIOD;
+		motor_ctrl_data[SPEED_MOTOR_LEFT].integral += error * (SPEED_PID_PERIOD);
+
+		// Limit integral error
 		if (motor_ctrl_data[SPEED_MOTOR_LEFT].integral > MOTOR_PWM_PERIOD) {
 			motor_ctrl_data[SPEED_MOTOR_LEFT].integral = MOTOR_PWM_PERIOD;
 		} else if (motor_ctrl_data[SPEED_MOTOR_LEFT].integral < -MOTOR_PWM_PERIOD) {
@@ -234,7 +246,6 @@ void motor_l_pid(void) {
 
 		// Derivative
 		pwm += K_D * (speed_c - speed_p) / (float)(SPEED_PID_PERIOD);
-
 
 
 		// Check if it maxed out
@@ -256,6 +267,7 @@ void motor_l_pid(void) {
 
 		// Store new previous speed
 		motor_ctrl_data[SPEED_MOTOR_LEFT].speed_p = speed_c;
+		last = OS_Time();
 
 		// Sleep for required time
 		// OS_Sleep(SPEED_PID_PERIOD - (OS_Time() - start));
@@ -287,22 +299,26 @@ void motors_print(void) {
 }
 
 void motors_test(void) {
+	// OS_Sleep(5000);
+	// Motor_SetSpeed(SPEED_MOTOR_LEFT, -0.2f);
+	// Motor_SetSpeed(SPEED_MOTOR_RIGHT, 0.2f);
+	// OS_Kill();
 	while(1) {
-		Motor_SetSpeed(SPEED_MOTOR_LEFT, -0.2f);
-		Motor_SetSpeed(SPEED_MOTOR_RIGHT, 0.2f);
-		OS_Sleep(5000);
-		Motor_SetSpeed(SPEED_MOTOR_LEFT, -0.1f);
-		Motor_SetSpeed(SPEED_MOTOR_RIGHT, 0.1f);
-		OS_Sleep(5000);
+		Motor_SetSpeed(SPEED_MOTOR_LEFT, -0.35f);
+		Motor_SetSpeed(SPEED_MOTOR_RIGHT, 0.35f);
+		OS_Sleep(10000);
+		Motor_SetSpeed(SPEED_MOTOR_LEFT, -0.15f);
+		Motor_SetSpeed(SPEED_MOTOR_RIGHT, 0.15f);
+		OS_Sleep(10000);
 		Motor_SetSpeed(SPEED_MOTOR_LEFT, 0.0f);
 		Motor_SetSpeed(SPEED_MOTOR_RIGHT, 0.0f);
-		OS_Sleep(5000);
-		Motor_SetSpeed(SPEED_MOTOR_LEFT, 0.1f);
-		Motor_SetSpeed(SPEED_MOTOR_RIGHT, -0.1f);
-		OS_Sleep(5000);
-		Motor_SetSpeed(SPEED_MOTOR_LEFT, 0.2f);
-		Motor_SetSpeed(SPEED_MOTOR_RIGHT, -0.2f);
-		OS_Sleep(5000);
+		OS_Sleep(10000);
+		Motor_SetSpeed(SPEED_MOTOR_LEFT, 0.15f);
+		Motor_SetSpeed(SPEED_MOTOR_RIGHT, -0.15f);
+		OS_Sleep(10000);
+		Motor_SetSpeed(SPEED_MOTOR_LEFT, 0.35f);
+		Motor_SetSpeed(SPEED_MOTOR_RIGHT, -0.35f);
+		OS_Sleep(10000);
 	}
 }
 
@@ -333,7 +349,7 @@ void Speed_Init(void) {
 	GPIO_PORTD_IM_R |= 0x0A;
 	GPIO_PORTD_IEV_R |= 0x0A;
 	// Set interrupt priority to 3
-  NVIC_PRI0_R = (NVIC_PRI0_R & 0x00FFFFFF) | (3 << 29);
+  NVIC_PRI0_R = (NVIC_PRI0_R & 0x00FFFFFF) | (0 << 29);
   NVIC_EN0_R |= 1 << 3;
 	// Lock GPIO Port D
 	GPIO_PORTD_LOCK_R = 0x00;
@@ -394,11 +410,11 @@ void Speed_Init(void) {
 	MailBox_Float_Init(&motor_speed_r);
 
 	// Add Threads
-	OS_AddThread("m_l_speed", &motor_l_speed, 256, 3);
-	OS_AddThread("m_r_speed", &motor_r_speed, 256, 3);
-	OS_AddThread("motor_l_pid", &motor_l_pid, 256, 3);
-	OS_AddThread("motor_r_pid", &motor_r_pid, 256, 3);
+	OS_AddThread("m_l_speed", &motor_l_speed, 128, 3);
+	OS_AddThread("m_r_speed", &motor_r_speed, 128, 3);
+	OS_AddThread("motor_l_pid", &motor_l_pid, 128, 2);
+	OS_AddThread("motor_r_pid", &motor_r_pid, 128, 2);
 
-	OS_AddThread("m_r_print", &motors_print, 256, 5);
-	OS_AddThread("m_test", &motors_test, 128, 5);
+	OS_AddThread("m_print", &motors_print, 128, 5);
+	// OS_AddThread("m_test", &motors_test, 128, 5);
 }

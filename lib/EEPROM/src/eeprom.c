@@ -1,5 +1,9 @@
 #include "eeprom.h"
 
+#include <stdint.h>
+#include <ctype.h>
+#include "tm4c123gh6pm.h"
+
 int EEPROM_Init(void) {
 	// Activate EEPROM clock
 	SYSCTL_RCGCEEPROM_R |= 0x01;

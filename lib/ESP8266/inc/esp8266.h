@@ -15,6 +15,8 @@
 #ifndef __ESP8266_H__
 #define __ESP8266_H__
 
+#define ESP8266_Enabled 0
+
 #define ESP8266_ENCRYPT_MODE_OPEN		 	      0
 #define ESP8266_ENCRYPT_MODE_WEP		 	      1
 #define ESP8266_ENCRYPT_MODE_WPA_PSK	 	    2

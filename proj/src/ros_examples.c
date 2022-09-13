@@ -405,7 +405,7 @@ void print_vals2(void) {
 }
 
 // OS and modules initialization
-int main(void){        // lab 4 real main
+int test(void){        // lab 4 real main
   // Initialize the OS
   OS_Init();           // initialize, disable interrupts
   // Initialize other modules

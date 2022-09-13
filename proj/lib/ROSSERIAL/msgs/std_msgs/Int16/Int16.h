@@ -1,7 +1,7 @@
 #ifndef __INT32_H__
 #define __INT32_H__
 
-#define ROS_INT32_LEN sizeof(short)
+#define ROS_INT16_LEN sizeof(short)
 
 #include "ros.h"
 

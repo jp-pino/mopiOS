@@ -2,19 +2,19 @@
 #define __SPEED_H__
 
 #define SPEED_PID_L_KC	 1
-#define SPEED_PID_PERIOD 100
+#define SPEED_PID_PERIOD 80
 
 
 #define SPEED_N 							64.0f
 #define SPEED_PI 							3.14159265f
 #define SPEED_GEAR_RELATION 	(1.0f/70.0f)
 #define SPEED_WHEEL_RADIUS 		0.06f
-#define SPEED_WHEEL_DISTANCE	42.0f
+#define SPEED_WHEEL_DISTANCE	0.42f
 
 // PID Constants
-#define K_P 15.0f
-#define K_I 10.0f
-#define K_D 1.0f
+#define K_P 110000.0f
+#define K_I 45.0f
+#define K_D 500.0f
 
 #define SPEED_MOTOR_LEFT 	0
 #define SPEED_MOTOR_RIGHT 1

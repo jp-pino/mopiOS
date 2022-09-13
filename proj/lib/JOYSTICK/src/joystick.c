@@ -126,12 +126,13 @@ void Joystick_Main(void) {
 	while(1) {
 		ADC_In10(temp);
 
-		nJoyX = temp[0] - JOYSTICK_MIN;
-		nJoyY = temp[1] - JOYSTICK_MIN;
+		nJoyX = (temp[0] - JOYSTICK_MIN)/JOYSTICK_MAX;
+		nJoyY = (temp[1] - JOYSTICK_MIN)/JOYSTICK_MAX;
 
-
-		Motor_SetSpeed(SPEED_MOTOR_LEFT, nJoyY - nJoyX * SPEED_WHEEL_DISTANCE / 2.0f);
-		Motor_SetSpeed(SPEED_MOTOR_RIGHT, nJoyX * SPEED_WHEEL_DISTANCE / 2.0f - nJoyY);
+		if (joystick_enable) {
+			Motor_SetSpeed(SPEED_MOTOR_LEFT, nJoyY - nJoyX * SPEED_WHEEL_DISTANCE / 2.0f);
+			Motor_SetSpeed(SPEED_MOTOR_RIGHT, nJoyX * SPEED_WHEEL_DISTANCE / 2.0f + nJoyY);
+		}
 
 		OS_Sleep(150);
 	}

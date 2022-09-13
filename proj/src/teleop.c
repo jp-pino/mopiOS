@@ -4,11 +4,6 @@
 #include "Motor.h"
 #include "Speed.h"
 
-// Linear.x> 0 and angular.z =0 -> MOVE STRAIGHT TO THE FRONT
-// Linear.x <0 and angular.z=0 -> Move to the back
-// Linear.x = 0 and angular.z>0 -> rotate about its own axis counter clock wise.
-// Linear.x = 0 and angular.z <0 -> rotate about its own axis clockwise.
-
 int teleop_enable = 1;
 
 void ROSTeleop_Disable(void) {
@@ -33,7 +28,7 @@ void ROSTeleop(void) {
 				// Send data to main
 				if (teleop_enable) {
 					Motor_SetSpeed(SPEED_MOTOR_LEFT, twistmessage->linear->x - twistmessage->angular->z * SPEED_WHEEL_DISTANCE / 2.0f);
-					Motor_SetSpeed(SPEED_MOTOR_RIGHT, twistmessage->angular->z * SPEED_WHEEL_DISTANCE / 2.0f -  twistmessage->linear->x);
+					Motor_SetSpeed(SPEED_MOTOR_RIGHT, twistmessage->angular->z * SPEED_WHEEL_DISTANCE / 2.0f + twistmessage->linear->x);
 				}
 				// Deallocate data
 				ROS_TwistFree(twistmessage);
@@ -45,5 +40,5 @@ void ROSTeleop(void) {
 }
 
 void Teleop_Init(void) {
-	ROS_AddSubscriber("cmd_vel", ROS_TwistMSG(), ROS_TwistMD5(), &ROSTeleop, 512, 4);
+	ROS_AddSubscriber("cmd_vel", ROS_TwistMSG(), ROS_TwistMD5(), &ROSTeleop, 512, 2);
 }

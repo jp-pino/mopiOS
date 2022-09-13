@@ -48,8 +48,8 @@ static FATFS OSfatFS;
 /* Constants definitions */
 
 #define GPIO_LOCK_KEY 0x4C4F434B // Unlocks the GPIO_CR register
-#define SW1 0x10 // on the left side of the Launchpad board
-#define SW2 0x01 // on the right side of the Launchpad board
+#define SW1 0x10 // on the left side of the Launchpad board PF4
+#define SW2 0x01 // on the right side of the Launchpad board PF0
 #define NVIC_INT_CTRL_R (*((volatile uint32_t *)0xE000ED04))
 #define NVIC_INT_CTRL_SETPENDSV 0x10000000 // Set pending PendSV interrupt
 #define NVIC_SYS_PRI3_R                                                        \
@@ -187,11 +187,11 @@ void PortF_Init(void) {
   GPIO_PORTF_AFSEL_R &= ~SW1 & ~SW2 & ~0x04 & ~0x08 & ~0x2;
   // delay = SYSCTL_RCGC2_R;        // put a delay here if you are seeing
   // erroneous NMI
-  // GPIO_PORTF_PUR_R |= SW1 | SW2; // enable weak pull-up on PF4, PF0
+  GPIO_PORTF_PUR_R |= SW1 | SW2; // enable weak pull-up on PF4, PF0
   GPIO_PORTF_DEN_R |=
       SW1 | SW2 | 0x04 | 0x08 | 0x2; // 7) enable digital I/O on PF4, PF0, PF1
 
-  // GPIO_PORTF_IM_R |= SW1 | SW2 ;
+  GPIO_PORTF_IM_R |= SW1 | SW2 ;
 
   // Initially set priority to 3 (will be overwritten)
   NVIC_PRI3_R = (NVIC_PRI3_R & 0xFF00FFFF) | (3 << 21);
@@ -333,6 +333,14 @@ void OS_Init(void) {
 
 	ST7735_OutString("Motors: initializing\n");
 	DRV8848_Init();
+
+  // Enable bootloader
+  if ((FLASH_BOOTCFG_R & 0x80000000) == 0x80000000) {
+    FLASH_FMD_R &= 0x7FFF86FE;
+    FLASH_FMA_R = 0x75100000;
+    FLASH_FMC_R |= 0xA4420009;
+    while ((FLASH_FMC_R & 0x00000008) == 0x00000008);
+  }
 
 }
 

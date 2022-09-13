@@ -42,6 +42,10 @@
 #define SEMA_T_NAME_LEN 15
 
 
+#define ROM_APITABLE   ((uint32_t *)0x01000010)
+#define ROM_UARTTABLE  ((uint32_t *)(ROM_APITABLE[1]))
+#define ROM_UpdateUART ((void (*)(void))ROM_UARTTABLE[21])
+
 
 /* Type definitions */
 

@@ -56,6 +56,11 @@ ESP8266    TM4C123
 #include "tm4c123gh6pm.h"
 #include "UART.h"
 #include "UART5.h"
+
+
+#if ESP8266_Enabled == 1
+
+
 // Access point parameters
 #define SSID_NAME  "ValvanoAP"
 #define PASSKEY    "12345678"
@@ -779,3 +784,5 @@ void HTTP_ServePage(const char* body){
   ESP8266SendCommand(contentLength);
   ESP8266SendCommand(body);
 }
+
+#endif
