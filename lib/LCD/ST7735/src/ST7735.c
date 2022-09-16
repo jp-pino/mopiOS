@@ -1774,3 +1774,49 @@ void ST7735_Message(int device, int line, char *string, float value) {
 	}
 	OS_bSignal(&LCDFree);
 }
+
+
+//------------ST7735_Message------------
+// String draw function.
+// Output a string in selecting either of two logical displays.
+// Position determined by selected screen and line number.
+// Top display includes rows 0 to 7.
+// Bottom display includes rows 8 to 15.
+// Input: device    top or bottom display.
+//                  Use: ST7735_DISPLAY_BOTTOM for bottom display
+//                  Use: ST7735_DISPLAY_TOP for top display
+//        line      rows from the top edge of the display (0 to 7)
+//        string    pointer to a null terminated string to be printed
+//        value     a number to display
+void ST7735_MessageLong(int device, int line, char *string, long value) {
+  // Validate that the line to print in is inside the logic
+  // display and that the selected display is either the first (0)
+  // or second (1) (as we have no other display)
+  char i, n = 0;
+	OS_bWait(&LCDFree);
+	if (line < 8 && (device == ST7735_DISPLAY_TOP ||
+    device == ST7735_DISPLAY_BOTTOM)) {
+    // Print the string: line is determined by multiplying the
+    // display number by 8. The string is printed from the beginning
+    // of the screen.
+		n = ST7735_DrawString(0, device*8 + line, string, ST7735_WHITE);
+    ST7735_SetCursor(n, device*8 + line);
+    for (i = n - 1; i < 12; i++) {
+      ST7735_OutChar(' ');
+    }
+		ST7735_SetCursor(12, device*8 + line);
+		if (value >= 0){
+      ST7735_OutChar(' ');
+		} else {
+      ST7735_OutChar('-');
+			value = -value;
+		}
+
+    // Print the number starting on the 18th character of the same line.
+    // Number must be four digits wide or shorter.
+		ST7735_SetCursor(15, device*8 + line);
+	  ST7735_OutUDec5(value);
+	}
+	
+	OS_bSignal(&LCDFree);
+}

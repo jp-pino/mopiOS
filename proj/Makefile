@@ -78,66 +78,13 @@ ${BUILDPATH}:
 #
 # Rules for building.
 #
-${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/_tm4c/startup.o 
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/_tm4c/libdriver.a
 ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/_tm4c/tm4c123gxl.ld
 ${BUILDPATH}/$(PROJ_NAME).axf: $(shell for line in `find .. -name "*.c"`; do dir=`dirname $$line`; name=`basename $$line .c`; echo "$${dir}/$${name}.o"; done;)
 ${BUILDPATH}/$(PROJ_NAME).axf: $(shell for line in `find .. -name "*_gnu.s"`; do dir=`dirname $$line`; name=`basename $$line .s`; echo "$${dir}/$${name}.o"; done;)
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/PLL/src/PLL.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/osasm_gnu.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/OS.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/OS/src/OS_Functions.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/MAILBOX/src/mailbox.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/LCD/ST7735/src/ST7735.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ADC/src/ADC.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ADC/src/ADCSWTrigger.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ELF/src/loader.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/HEAP/src/heap.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/UART/src/UART.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/UART1/src/UART1.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/UART5/src/UART5.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/Motor/src/Motor.o
-# # ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/ESP8266/src/esp8266.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/SD/src/diskio.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/SD/src/ff.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/SD/src/ff.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/lib/WATCHDOG/src/watchdog.o
 SCATTERgcc_$(PROJ_NAME)=${ROOT}/lib/_tm4c/tm4c123gxl.ld
 ENTRY_$(PROJ_NAME)=ResetISR
 CFLAGSgcc=-DTARGET_IS_TM4C123_RB1
-
-
-# # *****************************************************************************
-# # Add object files you need below
-# # *****************************************************************************
-# # Main file
-# ${BUILDPATH}/$(PROJ_NAME).axf: src/main.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: src/teleop.o
-# # Speed controller
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/SPEED/src/Speed.o
-# # Joystick
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/JOYSTICK/src/joystick.o
-# # Interpreter
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/INTERPRETER/src/Interpreter.o
-# # Wifi
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/WIFI/src/wifi.o
-# # ROS compatibility
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/src/ros.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/rosserial_msgs/TopicInfo/TopicInfo.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Bool/Bool.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Float32/Float32.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Float64/Float64.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Int32/Int32.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/UInt32/UInt32.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/std_msgs/Time/Time.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/geometry_msgs/Vector3/Vector3.o
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/ROSSERIAL/msgs/geometry_msgs/Twist/Twist.o
-# # Ultrasonic
-# # ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/PING/src/Ultrasonic.o
-# # printf
-# ${BUILDPATH}/$(PROJ_NAME).axf: ${ROOT}/proj/lib/printf/src/printf.o
-# *****************************************************************************
-
 
 #
 # Include the automatically generated dependency files.

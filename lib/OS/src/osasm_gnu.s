@@ -105,7 +105,7 @@ DoRoundRobin:
 contextSwitch:                     // Expectations: &RunPt = r1, RunPt = r2, NextPt = r3
   str       sp, [r2]              // Save sp into current TCB
   str       r3, [r1]              // Store next TCB pointer to RunPt
-  ldr       sp, [r3]              // Load next stack pointer into sp
+  ldr       sp, [r3]              // Load next s ack pointer into sp
   push      {r0, r1, r2, lr}
   ldr       r1, [r4, #32]         // RunPt->deleteThis => r3
   cmp       r1, #0

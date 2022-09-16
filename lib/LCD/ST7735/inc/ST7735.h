@@ -468,5 +468,6 @@ void Output_Color(uint32_t newColor);
 // bgColor is Black and size is 1
 // Output: number of characters printed
 void ST7735_Message(int device, int line, char *string, float value);
+void ST7735_MessageLong(int device, int line, char *string, long value);
 
 #endif

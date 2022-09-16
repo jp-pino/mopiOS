@@ -237,55 +237,45 @@ CFLAGS+=${patsubst %,-I%,${subst :, ,${IPATH}}}
 #
 # The rule for building the object file from each C source file.
 #
-${BUILDPATH}${SUFFIX}/%.o: %.c
+${BUILDPATH}/%.o: %.c
 	@if [ 'x${VERBOSE}' = x ];                                  \
 	 then                                                       \
 	     echo "  CC    ${<}";                                   \
 	 else                                                       \
 	     echo ${CC} ${CFLAGS} -D${BUILDPATH} -o ${@} ${<};      \
-	 fi
+	 fi;
+	
+	echo ">>>>>>>>>>>>>>> ${<}"
 	@${CC} ${CFLAGS} -D${BUILDPATH} -o ${@} ${<}
-ifneq ($(findstring CYGWIN, ${os}), )
-	@if [ -e ${@:.o=.d} ];                                      \
-	then                                                        \
-		sed -i -r 's/ ([A-Za-z]):/ \/cygdrive\/\1/g' ${@:.o=.d} ; \
-	fi
-endif
 
 #
 # The rule for building the object file from each assembly source file.
 #
-${BUILDPATH}${SUFFIX}/%.o: %.s
+${BUILDPATH}/%.o: %.s
 	@if [ 'x${VERBOSE}' = x ];                                  \
 	 then                                                       \
 	     echo "  AS    ${<}";                                   \
 	 else                                                       \
 	     echo ${CC} ${AFLAGS} -D${BUILDPATH} -o ${@} -c ${<};   \
-	 fi
+	 fi;
 	@${AS} ${AFLAGS} -D${BUILDPATH} -o ${@} -c ${<}
-ifneq ($(findstring CYGWIN, ${os}), )
-	@if [ -e ${@:.o=.d} ];                                      \
-	then                                                        \
-		sed -i -r 's/ ([A-Za-z]):/ \/cygdrive\/\1/g' ${@:.o=.d} ; \
-	fi
-endif
 
 #
 # The rule for creating an object library.
 #
-${BUILDPATH}${SUFFIX}/%.a:
+${BUILDPATH}/%.a:
 	@if [ 'x${VERBOSE}' = x ];     \
 	 then                          \
 	     echo "  AR    ${@}";      \
 	 else                          \
 	     echo ${AR} -cr ${@} ${^}; \
-	 fi
+	 fi;
 	@${AR} -cr ${@} ${^}
 
 #
 # The rule for linking the application.
 #
-${BUILDPATH}${SUFFIX}/%.axf:
+${BUILDPATH}/%.axf:
 	@if [ 'x${SCATTERgcc_${notdir ${@:.axf=}}}' = x ];                    \
 	 then                                                                 \
 	     ldname="${ROOT}/gcc/standalone.ld";                              \
@@ -314,13 +304,14 @@ endif
 # To create the bin file, we need to make all, which creates both
 # bin and axf files at once.
 #
-${BUILDPATH}/${PROJ_NAME}.bin:
-	@if [ -e ${BUILDPATH} ];                    \
-	then                                        \
-		rm -rf ${BUILDPATH} ${wildcard *~};       \
-		rm *.o *.d;                               \
-	fi;                                         \
-	make all;                                   \
+# ${BUILDPATH}/${PROJ_NAME}.bin:
+# 	@if [ -e ${BUILDPATH} ];                    \
+# 	then                                        \
+# 		rm -rf ${BUILDPATH} ${wildcard *~};       \
+# 		rm *.o *.d;                               \
+# 	fi;                                         
+
+${BUILDPATH}/${PROJ_NAME}.bin: all
 
 #
 # Flash depends on the bin file

@@ -3,12 +3,14 @@
 // Lab5.c - Barebones OS initialization
 //*****************************************************************************
 
+#include <stdint.h>
 #include "tm4c123gh6pm.h"
 #include "OS.h"
 #include "joystick.h"
 #include "teleop.h"
+#include "ST7735.h"
 
-#define TIMESLICE TIME_2MS  //thread switch time in system time units
+#define TIMESLICE 2*TIME_2MS  //thread switch time in system time units
 
 
 void task1(void) {
@@ -42,7 +44,8 @@ void task1(void) {
 }
 
 void task2(void) {
-  PF1 ^= 0x02;
+  static long i = 0;
+  ST7735_MessageLong(ST7735_DISPLAY_BOTTOM, 6, "Count: ", i++);
 }
 
 // OS and modules initialization

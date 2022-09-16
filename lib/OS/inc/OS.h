@@ -77,6 +77,7 @@ typedef struct tcb_t {
 	int fpu;
   char name[TCB_NAME_LEN + 1];
 	int output;
+  int swapped;
 } tcb_t;
 
 /* Semaphore */
@@ -156,6 +157,7 @@ void OS_AddSW2Task(void(*task)(void), int pri);
 /* Time Functions */
 
 unsigned long OS_Time(void);
+unsigned long OS_TimeFull(void);
 unsigned long OS_TimeDifference(unsigned long, unsigned long);
 unsigned long OS_MsTime(void);
 void OS_ClearMsTime(void);

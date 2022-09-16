@@ -25,6 +25,7 @@
 #include "Interpreter.h"
 #include "OS.h"
 #include "OS_Functions.h"
+#include "OS_Swap.h"
 #include "PLL.h"
 #include "ST7735.h"
 #include "UART.h"
@@ -228,12 +229,22 @@ void OS_EndCritical(long sr) {
 /* OS Functions */
 
 void OS_Idle(void) {
+  int i = 0;
   while (1) {
 		// Debug
-		// PF1 &= 0x0;
-		// PF2 |= 0x4;
-		// PF2 &= 0x0;
-		// PF1 |= 0x2;
+    // i++; 
+		PF1 &= 0x0;
+		PF2 |= 0x4;
+		PF2 &= 0x0;
+		PF1 |= 0x2;
+  }
+}
+
+
+void OS_ScreenTime(void) {
+  while (1) {
+    ST7735_MessageLong(ST7735_DISPLAY_BOTTOM, 7, "Time: ", (long)(OS_Time() / 1000.f));
+    OS_Sleep(900);
   }
 }
 
@@ -318,6 +329,7 @@ void OS_Init(void) {
 	ST7735_OutString("ADC: initializing\n");
   ADC_InitIT();
   OS_AddThread("idle", &OS_Idle, 96, NUM_PRIORITIES - 1);
+  OS_AddThread("idle", &OS_ScreenTime, 512, NUM_PRIORITIES - 1);
   OS_AddThread("bash", &Interpreter, 512, 3);
   OS_AddThread("fsinit", &OS_FsInit, 512, 0);
 
@@ -334,13 +346,16 @@ void OS_Init(void) {
 	ST7735_OutString("Motors: initializing\n");
 	DRV8848_Init();
 
+	ST7735_OutString("Swap: initializing\n");
+	OS_SwapInit();
+
   // Enable bootloader
-  if ((FLASH_BOOTCFG_R & 0x80000000) == 0x80000000) {
-    FLASH_FMD_R &= 0x7FFF86FE;
-    FLASH_FMA_R = 0x75100000;
-    FLASH_FMC_R |= 0xA4420009;
-    while ((FLASH_FMC_R & 0x00000008) == 0x00000008);
-  }
+  // if ((FLASH_BOOTCFG_R & 0x80000000) == 0x80000000) {
+  //   FLASH_FMD_R &= 0x7FFF86FE;
+  //   FLASH_FMA_R = 0x75100000;
+  //   FLASH_FMC_R |= 0xA4420009;
+  //   while ((FLASH_FMC_R & 0x00000008) == 0x00000008);
+  // }
 
 }
 
@@ -350,7 +365,7 @@ void OS_Init(void) {
 void OS_Launch(uint32_t timeSlice) {
   if (RunPt != 0) {
 		ST7735_OutString("Launching mopiOS!\n");
-		Output_Clear();
+		// Output_Clear();
 		ST7735_SetCursor(0,0);
 		//Watchdog_Init();
     timeslice = timeSlice;
